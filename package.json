@@ -1,0 +1,23 @@
+{
+  "name": "vue-vapor-a11y-experiment",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "sync": "node scripts/sync-vapor.mjs",
+    "dev:classic": "vite --config apps/classic/vite.config.mjs",
+    "dev:vapor": "vite --config apps/vapor/vite.config.mjs",
+    "build:classic": "vite build --config apps/classic/vite.config.mjs",
+    "build:vapor": "vite build --config apps/vapor/vite.config.mjs",
+    "smoke": "node scripts/smoke-test.mjs",
+    "test:e2e": "playwright test",
+    "diff": "node scripts/diff-snapshots.mjs"
+  },
+  "dependencies": {
+    "vue": "3.6.0-rc.3"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.8",
+    "vite": "^8.2.1",
+    "happy-dom": "^20.0.2"
+  }
+}
