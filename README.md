@@ -65,3 +65,61 @@ pnpm run smoke           # happy-dom での配線チェック
 pnpm run test:e2e        # ariaSnapshot 取得 (要 Playwright)
 pnpm run diff            # results/diff-report.md を出力
 ```
+
+## 検証エビデンス
+
+計測日 2026-08-16 / Node v26.2.0 / pnpm 11.5.0 / vue@3.6.0-rc.3 / vite@8.2.1 / @vitejs/plugin-vue@6.0.8
+
+### バンドルサイズ
+
+| 系統 | サイズ | gzip |
+|---|---|---|
+| classic | 64.30 kB | 25.22 kB |
+| vapor | 41.24 kB | 15.79 kB |
+
+Vapor 側は VDOM ランタイムを含まないため gzip で約 37% 小さい。
+
+### コード生成方式が本当に切り替わっているか
+
+「vapor 属性を付けたつもりが効いていなかった」事故を防ぐため、
+minify なしビルドの成果物を grep して確認する。
+
+```sh
+pnpm exec vite build --config apps/vapor/vite.config.mjs --minify false
+pnpm exec vite build --config apps/classic/vite.config.mjs --minify false
+
+grep -oE 'template\("[^"]*"|setText|VaporComponent' apps/vapor/dist/assets/*.js | sort -u
+grep -oE 'createElementBlock|createVNode|openBlock' apps/classic/dist/assets/*.js | sort -u
+```
+
+実際の出力:
+
+```
+vapor 側:   VaporComponent
+            setText
+            template("<main><h1>Vapor A11y Lab"
+            template("<section aria-labelledby=toast-heading><h2 id=toast-heading>...")
+
+classic 側: createElementBlock
+            createVNode
+            openBlock
+```
+
+vapor 側は HTML 文字列テンプレート + 直接 DOM 操作 (`template()` / `setText`)、
+classic 側は VNode 生成 (`createVNode`) — 2系統が意図通り別のコンパイル戦略に
+なっていることの証拠。
+
+### 2系統ソースの差分
+
+```sh
+pnpm run sync
+diff apps/classic/src/components/LiveRegionToast.vue \
+     apps/vapor/src/components/LiveRegionToast.vue
+```
+
+```
+1c1
+< <script setup>
+---
+> <script setup vapor>
+```
