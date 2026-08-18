@@ -109,6 +109,24 @@ vapor 側は HTML 文字列テンプレート + 直接 DOM 操作 (`template()` 
 classic 側は VNode 生成 (`createVNode`) — 2系統が意図通り別のコンパイル戦略に
 なっていることの証拠。
 
+### ariaSnapshot 差分 (W1: live region)
+
+`pnpm run test:e2e && pnpm run diff` の結果、**classic と vapor の
+アクセシビリティツリーは before / after ともに完全一致 (差分 0 件)**。
+
+```
+- main:
+  - heading "Vapor A11y Lab" [level=1]
+  - 'region "Live Region: トースト通知"':
+    - 'heading "Live Region: トースト通知" [level=2]'
+    - button "保存"
+    - status: 保存しました
+```
+
+比較の向きは「classic の before vs vapor の before」「after 同士」。
+同系統内の before/after 比較ではない。
+詳細は [results/diff-report.md](results/diff-report.md) を参照。
+
 ### 2系統ソースの差分
 
 ```sh
