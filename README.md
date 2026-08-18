@@ -107,7 +107,7 @@ grep -oE 'createElementBlock|createVNode|openBlock' apps/classic/dist/assets/*.j
 ```
 vapor 側:   VaporComponent
             setText
-            template("<main><h1>Vapor A11y Lab"
+            template("<main><h1>Vue Vapor A11y Experiment"
             template("<section aria-labelledby=toast-heading><h2 id=toast-heading>...")
 
 classic 側: createElementBlock
@@ -126,7 +126,7 @@ classic 側は VNode 生成 (`createVNode`) — 2系統が意図通り別のコ�
 
 ```
 - main:
-  - heading "Vapor A11y Lab" [level=1]
+  - heading "Vue Vapor A11y Experiment" [level=1]
   - 'region "Live Region: トースト通知"':
     - 'heading "Live Region: トースト通知" [level=2]'
     - button "保存"

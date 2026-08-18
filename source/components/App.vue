@@ -4,7 +4,7 @@ import LiveRegionToast from './components/LiveRegionToast.vue'
 
 <template>
   <main>
-    <h1>Vapor A11y Lab</h1>
+    <h1>Vue Vapor A11y Experiment</h1>
     <LiveRegionToast />
   </main>
 </template>
