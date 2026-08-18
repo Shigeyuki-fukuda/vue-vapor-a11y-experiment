@@ -57,7 +57,37 @@ async function open() {
 | カテゴリ | 検証したいこと | 状態 |
 |---|---|---|
 | live region | `role=status` の動的更新が支援技術に伝わるか | ✅ W1 完了 |
-| フォーカス管理 | モーダル開閉時のフォーカス移動・復帰 | 未着手 |
-| 動的 aria 属性 | `aria-expanded` / `aria-selected` の更新 | 未着手 |
-| フォームエラー | `aria-invalid` / `aria-describedby` の紐付け | 未着手 |
-| 条件付き描画 | `v-if` / `v-show` によるツリーの出入り | 未着手 |
+| フォーカス管理 | モーダル開閉時のフォーカス移動・復帰 | ✅ 完了 |
+| 動的 aria 属性 | `aria-expanded` の更新 | ✅ 完了 |
+| フォームエラー | `aria-invalid` / `aria-describedby` の紐付け | ✅ 完了 |
+| 条件付き描画 | `v-if` / `v-show` によるツリーの出入り | ✅ 完了 |
+
+ariaSnapshot 差分はいずれも 0 件。VoiceOver での読み上げ検証は
+[../results/voiceover-log.md](../results/voiceover-log.md) が未記入のため残っている。
+
+### 次に増やすなら
+
+`aria-selected` を伴うタブ、`aria-live="assertive"` との比較、
+リスト要素の並べ替え (キー付き `v-for` の再利用) あたりが、
+Vapor のレンダリング方式の違いが出うる未検証領域。
+
+## フォーカス位置をスナップショットに残す
+
+`ariaSnapshot()` の出力にフォーカス位置は含まれない。
+フォーカスを検証する項目では、ツリーとは別に `:focus` 要素の
+アクセシビリティ表現を時点として保存する。
+
+```js
+const focusOpened = await page.locator(':focus').ariaSnapshot()
+
+saveSnapshot(t.name, 'focus-management', {
+  opened,
+  'focus-opened': focusOpened,   // → focus-management.focus-opened.yaml
+})
+```
+
+`diff-snapshots.mjs` はファイル名単位で classic / vapor を突き合わせるため、
+時点を増やせばそのまま比較対象に加わる。スクリプト側の変更は不要。
+
+なお初期状態のようにフォーカスが `body` にある時点では `:focus` が
+どの要素にもマッチしないため、時点として記録しない。

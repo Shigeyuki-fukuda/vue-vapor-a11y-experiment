@@ -37,6 +37,31 @@ vapor 側に `VaporComponent` / `setText` / `template("...")` が出れば正し
 待つ ([e2e/scenarios/live-region.spec.mjs](../e2e/scenarios/live-region.spec.mjs) 参照)。
 それでもブレる場合は `page.waitForLoadState()` を追加する。
 
+## フォーカスを移動させたのに ariaSnapshot に差が出ない
+
+**原因**: `ariaSnapshot()` の出力にフォーカス位置は含まれない。
+ツリーの構造だけを見ているので、どこにフォーカスがあっても同じ結果になる。
+
+**対処**: `:focus` 要素のアクセシビリティ表現を別時点として保存し、
+これも比較対象に含める
+([e2e/scenarios/focus-management.spec.mjs](../e2e/scenarios/focus-management.spec.mjs) 参照)。
+
+```js
+const focusOpened = await page.locator(':focus').ariaSnapshot()
+```
+
+初期状態のようにフォーカスが `body` にある時点では `:focus` がどの要素にも
+マッチせず取得に失敗するため、その時点は記録しない。
+
+## `pnpm run smoke` が意図しないボタンを押している
+
+**原因**: スモークテストは「live region の配線が繋がっているか」だけを見る
+最小チェックで、ボタンをテキストで特定している。テキストを変えると空振りする。
+
+**対処**: `source/components/LiveRegionToast.vue` のボタン名を変えたときは
+[scripts/smoke-test.mjs](../scripts/smoke-test.mjs) の対象テキストも合わせる。
+なお、より広い検証は E2E 側の責務なのでスモークは増やさない。
+
 ## Vue 3.6 stable が出て結果の鮮度が心配
 
 **対処**: `package.json` のバージョンを上げて

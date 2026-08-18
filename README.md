@@ -76,18 +76,35 @@ pnpm run diff            # results/diff-report.md を出力
 | [results/diff-report.md](results/diff-report.md) | ariaSnapshot 差分レポート (自動生成) |
 | [results/voiceover-log.md](results/voiceover-log.md) | VoiceOver 読み上げ記録 |
 
+## 検証カテゴリ
+
+| カテゴリ | 検証内容 | シナリオ | 差分 |
+|---|---|---|---|
+| live region | `role=status` の動的更新 | [live-region](e2e/scenarios/live-region.spec.mjs) | ✅ なし |
+| フォーカス管理 | モーダル開閉時のフォーカス移動・復帰 | [focus-management](e2e/scenarios/focus-management.spec.mjs) | ✅ なし |
+| 動的 aria 属性 | `aria-expanded` の更新 | [dynamic-aria](e2e/scenarios/dynamic-aria.spec.mjs) | ✅ なし |
+| フォームエラー | `aria-invalid` / `aria-describedby` の紐付け | [form-error](e2e/scenarios/form-error.spec.mjs) | ✅ なし |
+| 条件付き描画 | `v-if` / `v-show` によるツリーの出入り | [conditional-render](e2e/scenarios/conditional-render.spec.mjs) | ✅ なし |
+
 ## 検証エビデンス
 
-計測日 2026-08-16 / Node v26.2.0 / pnpm 11.5.0 / vue@3.6.0-rc.3 / vite@8.2.1 / @vitejs/plugin-vue@6.0.8
+計測日 2026-08-18 / Node v26.2.0 / pnpm 11.5.0 / vue@3.6.0-rc.3 / vite@8.2.1 /
+@vitejs/plugin-vue@6.0.8 / @playwright/test@1.62.1
 
 ### バンドルサイズ
 
+5カテゴリ分のコンポーネントを含めた状態での計測。
+
 | 系統 | サイズ | gzip |
 |---|---|---|
-| classic | 64.30 kB | 25.22 kB |
-| vapor | 41.24 kB | 15.79 kB |
+| classic | 69.65 kB | 27.39 kB |
+| vapor | 51.12 kB | 19.64 kB |
 
-Vapor 側は VDOM ランタイムを含まないため gzip で約 37% 小さい。
+Vapor 側は VDOM ランタイムを含まないため gzip で約 28% 小さい。
+
+> 検証項目を増やすとアプリ固有のコードが両系統に等しく積み上がるため、
+> ランタイム差の比率は相対的に縮む。1カテゴリのみだった時点では約 37% 差だった。
+> 差の絶対値 (gzip 約 7.7 kB) がランタイム由来の削減分にあたる。
 
 ### コード生成方式が本当に切り替わっているか
 
@@ -98,31 +115,46 @@ minify なしビルドの成果物を grep して確認する。
 pnpm exec vite build --config apps/vapor/vite.config.mjs --minify false
 pnpm exec vite build --config apps/classic/vite.config.mjs --minify false
 
-grep -oE 'template\("[^"]*"|setText|VaporComponent' apps/vapor/dist/assets/*.js | sort -u
-grep -oE 'createElementBlock|createVNode|openBlock' apps/classic/dist/assets/*.js | sort -u
+grep -oE 'template\("[^"]{0,40}|setText|setAttr|VaporComponent|createIf' \
+  apps/vapor/dist/assets/*.js | sort -u
+grep -oE 'createElementBlock|createVNode|openBlock|toDisplayString' \
+  apps/classic/dist/assets/*.js | sort -u
 ```
 
 実際の出力:
 
 ```
 vapor 側:   VaporComponent
+            createIf
+            setAttr
             setText
-            template("<main><h1>Vue Vapor A11y Experiment"
-            template("<section aria-labelledby=toast-heading><h2 id=toast-heading>...")
+            template("<div role=dialog aria-modal=true aria-la
+            template("<main><h1>Vue Vapor A11y Experiment
+            template("<p id=email-error role=alert> メールアドレスの形式
+            template("<p>v-if で出し入れされる補足
+            template("<section aria-labelledby=conditional-hea
+            template("<section aria-labelledby=disclosure-head
+            template("<section aria-labelledby=focus-heading><
+            template("<section aria-labelledby=form-heading><h
+            template("<section aria-labelledby=toast-heading><
 
 classic 側: createElementBlock
             createVNode
             openBlock
+            toDisplayString
 ```
 
-vapor 側は HTML 文字列テンプレート + 直接 DOM 操作 (`template()` / `setText`)、
-classic 側は VNode 生成 (`createVNode`) — 2系統が意図通り別のコンパイル戦略に
-なっていることの証拠。
+vapor 側は HTML 文字列テンプレート + 直接 DOM 操作 (`template()` / `setText` /
+`setAttr`)、条件分岐は `createIf`。classic 側は VNode 生成 (`createVNode`) と
+`toDisplayString` — 2系統が意図通り別のコンパイル戦略になっていることの証拠。
 
-### ariaSnapshot 差分 (W1: live region)
+`aria-modal` や `role=alert` が **`template()` の静的文字列に焼き込まれている**点も
+重要で、Vapor では静的な aria 属性が VNode を経由せず HTML として直接出力される。
 
-`pnpm run test:e2e && pnpm run diff` の結果、**classic と vapor の
-アクセシビリティツリーは before / after ともに完全一致 (差分 0 件)**。
+### ariaSnapshot 差分 (全5カテゴリ)
+
+`pnpm run test:e2e && pnpm run diff` の結果、**15スナップショットすべてで
+classic と vapor のアクセシビリティツリーが完全一致 (差分 0 件)**。
 
 ```
 - main:
@@ -131,11 +163,43 @@ classic 側は VNode 生成 (`createVNode`) — 2系統が意図通り別のコ�
     - 'heading "Live Region: トースト通知" [level=2]'
     - button "保存"
     - status: 保存しました
+  - 'region "フォーカス管理: モーダルダイアログ"':
+    - 'heading "フォーカス管理: モーダルダイアログ" [level=2]'
+    - button "設定を開く"
+    - dialog "表示設定":
+      - heading "表示設定" [level=3]
+      - button "閉じる"
+  - 'region "動的 aria 属性: 開閉パネル"':
+    - 'heading "動的 aria 属性: 開閉パネル" [level=2]'
+    - button "コンパイル結果の詳細" [expanded]
+    - paragraph: Vapor Mode は VDOM を経由せず DOM を直接更新する。
+  - 'region "フォームエラー: 入力検証"':
+    - 'heading "フォームエラー: 入力検証" [level=2]'
+    - text: メールアドレス
+    - textbox "メールアドレス" [invalid]: not-an-email
+    - alert: メールアドレスの形式が正しくありません
+    - button "送信"
 ```
 
-比較の向きは「classic の before vs vapor の before」「after 同士」。
+比較の向きは「classic の同一時点 vs vapor の同一時点」。
 同系統内の before/after 比較ではない。
 詳細は [results/diff-report.md](results/diff-report.md) を参照。
+
+#### フォーカス位置の扱い
+
+`ariaSnapshot()` の出力にフォーカス位置は含まれない。そのため
+フォーカス管理シナリオでは `:focus` 要素のアクセシビリティ表現を
+`focus-opened` / `focus-closed` という別時点として保存し、これも比較対象にしている。
+
+```
+focus-opened:              focus-closed:
+- dialog "表示設定":         - button "設定を開く"
+  - heading "表示設定" [level=3]
+  - button "閉じる"
+```
+
+ダイアログを開くとダイアログ自身へ、閉じると呼び出し元のボタンへフォーカスが
+戻る挙動が、2系統で一致していることを示す。
 
 ### 2系統ソースの差分
 
