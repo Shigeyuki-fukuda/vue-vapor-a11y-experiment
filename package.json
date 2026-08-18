@@ -16,8 +16,9 @@
     "vue": "3.6.0-rc.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@vitejs/plugin-vue": "^6.0.8",
-    "vite": "^8.2.1",
-    "happy-dom": "^20.0.2"
+    "happy-dom": "^20.0.2",
+    "vite": "^8.2.1"
   }
 }

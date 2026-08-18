@@ -1,0 +1,6 @@
+- main:
+  - heading "Vapor A11y Lab" [level=1]
+  - 'region "Live Region: トースト通知"':
+    - 'heading "Live Region: トースト通知" [level=2]'
+    - button "保存"
+    - status
