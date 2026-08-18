@@ -13,3 +13,8 @@
   - 'region "動的 aria 属性: 開閉パネル"':
     - 'heading "動的 aria 属性: 開閉パネル" [level=2]'
     - button "コンパイル結果の詳細"
+  - 'region "フォームエラー: 入力検証"':
+    - 'heading "フォームエラー: 入力検証" [level=2]'
+    - text: メールアドレス
+    - textbox "メールアドレス"
+    - button "送信"

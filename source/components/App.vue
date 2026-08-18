@@ -2,6 +2,7 @@
 import LiveRegionToast from './components/LiveRegionToast.vue'
 import FocusDialog from './components/FocusDialog.vue'
 import DisclosurePanel from './components/DisclosurePanel.vue'
+import ValidatedForm from './components/ValidatedForm.vue'
 </script>
 
 <template>
@@ -10,5 +11,6 @@ import DisclosurePanel from './components/DisclosurePanel.vue'
     <LiveRegionToast />
     <FocusDialog />
     <DisclosurePanel />
+    <ValidatedForm />
   </main>
 </template>
