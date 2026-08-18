@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.DS_Store
+
+# sync-vapor.mjs の生成物 (source/components が唯一の編集対象)
+apps/*/src/App.vue
+apps/*/src/components/
+
+# Playwright
+test-results/
+playwright-report/
