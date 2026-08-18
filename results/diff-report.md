@@ -4,6 +4,8 @@
 
 | シナリオ.時点 | 差分 |
 |---|---|
+| dynamic-aria.collapsed | ✅ なし |
+| dynamic-aria.expanded | ✅ なし |
 | focus-management.closed | ✅ なし |
 | focus-management.focus-closed | ✅ なし |
 | focus-management.focus-opened | ✅ なし |

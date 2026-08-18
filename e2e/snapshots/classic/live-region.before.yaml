@@ -7,3 +7,6 @@
   - 'region "フォーカス管理: モーダルダイアログ"':
     - 'heading "フォーカス管理: モーダルダイアログ" [level=2]'
     - button "設定を開く"
+  - 'region "動的 aria 属性: 開閉パネル"':
+    - 'heading "動的 aria 属性: 開閉パネル" [level=2]'
+    - button "コンパイル結果の詳細"
