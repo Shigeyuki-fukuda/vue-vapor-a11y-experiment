@@ -4,3 +4,6 @@
     - 'heading "Live Region: トースト通知" [level=2]'
     - button "保存"
     - status
+  - 'region "フォーカス管理: モーダルダイアログ"':
+    - 'heading "フォーカス管理: モーダルダイアログ" [level=2]'
+    - button "設定を開く"

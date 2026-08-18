@@ -4,6 +4,11 @@
 
 | シナリオ.時点 | 差分 |
 |---|---|
+| focus-management.closed | ✅ なし |
+| focus-management.focus-closed | ✅ なし |
+| focus-management.focus-opened | ✅ なし |
+| focus-management.initial | ✅ なし |
+| focus-management.opened | ✅ なし |
 | live-region.after | ✅ なし |
 | live-region.before | ✅ なし |
 
