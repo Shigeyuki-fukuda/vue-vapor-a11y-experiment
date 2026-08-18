@@ -66,6 +66,16 @@ pnpm run test:e2e        # ariaSnapshot 取得 (要 Playwright)
 pnpm run diff            # results/diff-report.md を出力
 ```
 
+## ドキュメント
+
+| ドキュメント | 内容 |
+|---|---|
+| [docs/adding-scenarios.md](docs/adding-scenarios.md) | 検証項目を増やすときの定型フロー (5手順) |
+| [docs/voiceover-procedure.md](docs/voiceover-procedure.md) | VoiceOver 検証の手順 (macOS) |
+| [docs/troubleshooting.md](docs/troubleshooting.md) | トラブルシューティング |
+| [results/diff-report.md](results/diff-report.md) | ariaSnapshot 差分レポート (自動生成) |
+| [results/voiceover-log.md](results/voiceover-log.md) | VoiceOver 読み上げ記録 |
+
 ## 検証エビデンス
 
 計測日 2026-08-16 / Node v26.2.0 / pnpm 11.5.0 / vue@3.6.0-rc.3 / vite@8.2.1 / @vitejs/plugin-vue@6.0.8
