@@ -16,3 +16,6 @@
     - textbox "メールアドレス" [invalid]: not-an-email
     - alert: メールアドレスの形式が正しくありません
     - button "送信"
+  - 'region "条件付き描画: v-if と v-show"':
+    - 'heading "条件付き描画: v-if と v-show" [level=2]'
+    - button "補足を切り替え"

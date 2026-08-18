@@ -18,3 +18,6 @@
     - text: メールアドレス
     - textbox "メールアドレス"
     - button "送信"
+  - 'region "条件付き描画: v-if と v-show"':
+    - 'heading "条件付き描画: v-if と v-show" [level=2]'
+    - button "補足を切り替え"

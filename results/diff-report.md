@@ -4,6 +4,9 @@
 
 | シナリオ.時点 | 差分 |
 |---|---|
+| conditional-render.hidden-again | ✅ なし |
+| conditional-render.hidden | ✅ なし |
+| conditional-render.shown | ✅ なし |
 | dynamic-aria.collapsed | ✅ なし |
 | dynamic-aria.expanded | ✅ なし |
 | focus-management.closed | ✅ なし |
