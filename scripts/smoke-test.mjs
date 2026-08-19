@@ -17,8 +17,11 @@ async function run(name) {
   await import(pathToFileURL(`apps/${name}/dist/assets/${asset}`).href)
 
   const before = document.querySelector('[role=status]')?.textContent ?? '(なし)'
-  document.querySelector('button')
-    .dispatchEvent(new window.MouseEvent('click', { bubbles: true }))
+  // 検証コンポーネントが増えても対象がずれないよう、ボタンはテキストで特定する
+  const saveButton = [...document.querySelectorAll('button')]
+    .find(b => b.textContent.trim() === '保存')
+  if (!saveButton) throw new Error(`[${name}] 「保存」ボタンが見つかりません`)
+  saveButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }))
   await new Promise(r => setTimeout(r, 50))
   const after = document.querySelector('[role=status]')?.textContent ?? '(なし)'
   console.log(`[${name}] click前: "${before.trim()}" → click後: "${after.trim()}"`)

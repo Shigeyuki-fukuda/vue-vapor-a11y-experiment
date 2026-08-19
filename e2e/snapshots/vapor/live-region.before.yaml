@@ -1,6 +1,20 @@
 - main:
-  - heading "Vapor A11y Lab" [level=1]
+  - heading "Vue Vapor A11y Experiment" [level=1]
   - 'region "Live Region: トースト通知"':
     - 'heading "Live Region: トースト通知" [level=2]'
     - button "保存"
     - status
+  - 'region "フォーカス管理: モーダルダイアログ"':
+    - 'heading "フォーカス管理: モーダルダイアログ" [level=2]'
+    - button "設定を開く"
+  - 'region "動的 aria 属性: 開閉パネル"':
+    - 'heading "動的 aria 属性: 開閉パネル" [level=2]'
+    - button "コンパイル結果の詳細"
+  - 'region "フォームエラー: 入力検証"':
+    - 'heading "フォームエラー: 入力検証" [level=2]'
+    - text: メールアドレス
+    - textbox "メールアドレス"
+    - button "送信"
+  - 'region "条件付き描画: v-if と v-show"':
+    - 'heading "条件付き描画: v-if と v-show" [level=2]'
+    - button "補足を切り替え"
