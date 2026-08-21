@@ -1,9 +1,11 @@
 # vue-vapor-a11y-experiment
 
 > **EN** — A verification harness that checks whether Vue 3.6 Vapor Mode breaks accessibility.
-> One component source is compiled into two apps, classic (VDOM) and vapor, differing by a single
-> line. Their accessibility trees are captured with Playwright's `ariaSnapshot()` and diffed, so any
-> difference can only be attributed to Vapor Mode. The full write-up below is in Japanese.
+> One component source is compiled into two apps, classic (VDOM) and vapor, from byte-identical
+> sources that differ only in a build flag. Their accessibility trees are captured with Playwright's
+> `ariaSnapshot()` and diffed, so any difference can only be attributed to Vapor Mode. A guard script
+> verifies that the two apps really were compiled by different strategies. The full write-up below is
+> in Japanese.
 
 Vue 3.6 の **Vapor Mode** でアクセシビリティが壊れないかを検証するためのリポジトリ。
 
@@ -20,8 +22,50 @@ Playwright の `ariaSnapshot()` でアクセシビリティツリーを取得し
 `apps/*/src/App.vue` と `apps/*/src/components/` は `pnpm run sync` の生成物であり、
 直接編集しない (編集すると2系統の同一性が壊れるため `.gitignore` 済み)。
 
-classic と vapor の差分は `<script setup>` → `<script setup vapor>` の**1行の置換のみ**。
+**2系統のコンポーネントソースはバイト単位で完全に同一。** Vapor Mode の指定は
+Vite 設定側にあり、コンポーネントには一切現れない。意図的な差分は次の2点だけで、
+いずれも `pnpm run verify` が機械的に検証する。
+
+| 差分 | 場所 |
+|---|---|
+| コンパイルモード | `scripts/lanes.mjs` の `vapor` フラグ → `@vitejs/plugin-vue` の `features.vapor` |
+| マウント関数 | `apps/{lane}/src/main.js` の `createApp` / `createVaporApp` |
+
 これにより「観測された差分の原因は Vapor Mode 以外にない」ことを機械的に保証する。
+
+> 以前は vapor 側だけ `<script setup>` を `<script setup vapor>` に文字列置換していた。
+> 置換は完全一致に依存するため、例えば `lang="ts"` を付けた途端に無言で不一致になり、
+> vapor 側が classic としてビルドされて「差分なし」という偽の成功を出す危険があった。
+> `features.vapor` はプラグインレベルの強制スイッチで、判定条件は
+> `<script setup>` の有無のみ。`lang="ts"` に依存しない。
+
+### 検証を成立させる3つのガード
+
+`pnpm run verify` が以下を確認し、1つでも崩れていれば非ゼロ終了する。
+
+| # | 検証内容 | 防ぐ事故 |
+|---|---|---|
+| 1 | 2系統のコンポーネントソースがバイト単位で同一 | 片方だけ編集し、差分の原因を Vapor だと取り違える |
+| 2 | ビルド設定と entry が lane のあるべき姿と一致 | 設定を間違えたまま比較して気付かない |
+| 3 | ビルド成果物が意図したコンパイル戦略で生成されている | プラグインが指定を無視し、classic 同士を比較する |
+
+3 の判定は **minify 済みの成果物**に対して行う。マーカーは文字列リテラルと
+オブジェクトキーなので、識別子と違って minify で消えない。
+
+| lane | HTML 文字列テンプレート (Vapor) | VNode props (VDOM) |
+|---|---|---|
+| classic | 0 | 11 |
+| vapor | 7 | 0 |
+
+どちらの方向も見ているため、「Vapor になっていない」と「VDOM が混入した」の
+両方を検出できる。0 件はマーカー自体が陳腐化した場合にも起きるので、
+その場合も失敗させて黙って通り抜けないようにしている。
+
+**期待値は `scripts/verify-vapor-mode.mjs` が `scripts/lanes.mjs` とは独立に宣言している。**
+lanes.mjs を参照して期待値を組み立てると、lanes.mjs の設定ミスを
+「設定どおりだから正しい」と判定してしまう (この穴は実測で確認した。
+`features.vapor` を false に倒したのに検証が通ってしまった)。
+検証の期待値は被検証対象から独立していなければならない。
 
 ## ディレクトリ構成
 
@@ -30,20 +74,28 @@ vue-vapor-a11y-experiment/
 ├─ package.json
 ├─ playwright.config.mjs
 ├─ source/
-│  └─ components/            # ← 唯一の編集対象。classic構文で書く
+│  └─ components/            # ← 唯一の編集対象。2系統に同一のものが配られる
 ├─ scripts/
-│  ├─ sync-vapor.mjs          # vapor属性の付与だけを行い2系統へ展開
+│  ├─ lanes.mjs               # 2系統のビルド設定 (vapor フラグ / dev ポート)
+│  ├─ sources.mjs             # 配布先の解決と「2系統が同一」の検証
+│  ├─ sync-sources.mjs        # source/ を2系統へ配布 (変換は一切しない)
+│  ├─ verify-vapor-mode.mjs   # 成果物と entry が意図通りかを検証
 │  ├─ smoke-test.mjs          # happy-dom での簡易動作確認
 │  └─ diff-snapshots.mjs      # classic vs vapor の差分集計
 ├─ apps/
-│  ├─ classic/                # createApp / 生成物 (直接編集しない)
-│  └─ vapor/                  # createVaporApp / 生成物 (直接編集しない)
+│  ├─ vite.config.base.mjs    # 両系統の Vite 設定を生成するファクトリ
+│  ├─ classic/                # createApp / src 配下は生成物 (直接編集しない)
+│  └─ vapor/                  # createVaporApp / src 配下は生成物 (同上)
 ├─ e2e/
 │  ├─ helpers/snapshot.mjs
 │  ├─ scenarios/*.spec.mjs
 │  └─ snapshots/{classic,vapor}/
 └─ results/diff-report.md     # 発表資料の元ネタ
 ```
+
+`apps/*/vite.config.mjs` は `createLaneConfig('classic')` を呼ぶだけの1行。
+設定を2ファイルに手で書き分けないことで、「片方だけに加えた変更」が
+差分の原因になり得ない構造にしている。
 
 ## 前提環境
 
@@ -58,9 +110,16 @@ pnpm ではこの問題が起きない。
 
 ```sh
 pnpm install
-pnpm run sync            # source/ → apps/{classic,vapor}/src へ展開
-pnpm run build:classic
-pnpm run build:vapor
+pnpm exec playwright install chromium   # 初回のみ
+pnpm run check                          # 下記を通しで実行する
+```
+
+`check` の内訳。個別に実行してもよい。
+
+```sh
+pnpm run sync            # source/ → apps/{classic,vapor}/src へ配布
+pnpm run build           # 2系統をビルド (build:classic / build:vapor も個別に可)
+pnpm run verify          # 3つのガードを検証 ★これを通さない結果は信用しない
 pnpm run smoke           # happy-dom での配線チェック
 pnpm run test:e2e        # ariaSnapshot 取得 (要 Playwright)
 pnpm run diff            # results/diff-report.md を出力
@@ -70,7 +129,8 @@ pnpm run diff            # results/diff-report.md を出力
 
 | ドキュメント | 内容 |
 |---|---|
-| [docs/adding-scenarios.md](docs/adding-scenarios.md) | 検証項目を増やすときの定型フロー (5手順) |
+| [docs/manual-verification.html](docs/manual-verification.html) | 手動での検証手順と VoiceOver 検証手順 (ブラウザで開く) |
+| [docs/adding-scenarios.md](docs/adding-scenarios.md) | 検証項目を増やすときの定型フロー |
 | [docs/voiceover-procedure.md](docs/voiceover-procedure.md) | VoiceOver 検証の手順 (macOS) |
 | [docs/troubleshooting.md](docs/troubleshooting.md) | トラブルシューティング |
 | [results/diff-report.md](results/diff-report.md) | ariaSnapshot 差分レポート (自動生成) |
@@ -86,9 +146,36 @@ pnpm run diff            # results/diff-report.md を出力
 | フォームエラー | `aria-invalid` / `aria-describedby` の紐付け | [form-error](e2e/scenarios/form-error.spec.mjs) | ✅ なし |
 | 条件付き描画 | `v-if` / `v-show` によるツリーの出入り | [conditional-render](e2e/scenarios/conditional-render.spec.mjs) | ✅ なし |
 
+## 検証範囲の限界
+
+この検証が扱っているのは **単一コンポーネント内の静的/動的 aria 属性**であり、
+以下は未検証。「Vapor Mode でアクセシビリティは壊れない」と述べる際は
+この範囲を明示する必要がある。
+
+| 未検証の領域 | 差分が出うる理由 |
+|---|---|
+| `v-for` によるリスト描画 | Vapor のリスト差分アルゴリズムは VDOM と別実装。行を再利用する際に `aria-selected` / `aria-posinset` が古い値のまま残る余地がある |
+| props / slots によるコンポーネント合成 | 親から渡した id で `aria-labelledby` を張る構成が保たれるか |
+| `<Teleport>` | モーダルを body 直下へ移したときに `aria-modal` とフォーカストラップが機能するか |
+| `<Transition>` | アニメーション中の要素がアクセシビリティツリーに残留しないか |
+| SSR / hydration | Vapor の hydration は独立実装。属性欠落が起きるならここ |
+| 動的コンポーネント (`:is`) | 差し替え時に role や関連付けが引き継がれるか |
+
+`source/components/` は現時点で `defineProps` / `defineEmits` / `withDefaults` /
+`defineModel` / `<Teleport>` / `<Transition>` / `<Suspense>` / `v-for` / `:is` /
+`provide` / `inject` をいずれも使っていない。
+
+### TypeScript を使っていないことの影響
+
+結論は変わらない。`lang="ts"` が変えるのは `<script>` ブロックの扱い
+(型注釈の除去と型ベースマクロの解決) で、aria 属性を出力する template
+コンパイラの経路とは別である。加えて上記のとおり型ベースマクロを1つも
+使っていないため、TS 化しても生成されるコードは変わらない。
+ビルド設定とハーネスの `.mjs` はブラウザに読み込まれないため成果物に影響しない。
+
 ## 検証エビデンス
 
-計測日 2026-08-18 / Node v26.2.0 / pnpm 11.5.0 / vue@3.6.0-rc.3 / vite@8.2.1 /
+計測日 2026-08-21 / Node v26.2.0 / pnpm 11.5.0 / vue@3.6.0-rc.3 / vite@8.2.1 /
 @vitejs/plugin-vue@6.0.8 / @playwright/test@1.62.1
 
 ### バンドルサイズ
@@ -108,8 +195,24 @@ Vapor 側は VDOM ランタイムを含まないため gzip で約 28% 小さい
 
 ### コード生成方式が本当に切り替わっているか
 
-「vapor 属性を付けたつもりが効いていなかった」事故を防ぐため、
-minify なしビルドの成果物を grep して確認する。
+日常的にはこれだけでよい。通常ビルドの成果物をそのまま判定する。
+
+```sh
+pnpm run verify
+```
+
+```
+✅ 全 lane のソースがバイト単位で同一 (6 files)
+
+| lane | 期待 vapor | 期待マウント関数 | HTML文字列テンプレート | VNode props | 判定 |
+|---|---|---|---|---|---|
+| classic | false | createApp | 0 | 11 | ✅ OK |
+| vapor | true | createVaporApp | 7 | 0 | ✅ OK |
+
+✅ 両 lane が意図どおり別のコンパイル戦略でビルドされています
+```
+
+生成コードそのものを読みたい場合は minify なしでビルドして grep する。
 
 ```sh
 pnpm exec vite build --config apps/vapor/vite.config.mjs --minify false
@@ -150,6 +253,10 @@ vapor 側は HTML 文字列テンプレート + 直接 DOM 操作 (`template()` 
 
 `aria-modal` や `role=alert` が **`template()` の静的文字列に焼き込まれている**点も
 重要で、Vapor では静的な aria 属性が VNode を経由せず HTML として直接出力される。
+
+> `--minify false` の成果物はサイズが大きく、そのままだと
+> バンドルサイズの計測値としては使えない。観察が終わったら
+> `pnpm run build` で通常ビルドに戻す。
 
 ### ariaSnapshot 差分 (全5カテゴリ)
 
@@ -203,15 +310,18 @@ focus-opened:              focus-closed:
 
 ### 2系統ソースの差分
 
+差分は存在しない。同一であることをスクリプトが検証している。
+
 ```sh
 pnpm run sync
-diff apps/classic/src/components/LiveRegionToast.vue \
-     apps/vapor/src/components/LiveRegionToast.vue
+diff -r apps/classic/src/components apps/vapor/src/components
 ```
 
 ```
-1c1
-< <script setup>
----
-> <script setup vapor>
+(出力なし)
 ```
+
+コンポーネント以外で lane ごとに異なるのは entry の `main.js` (マウント関数) と
+`index.html` の `<title>` (`classic` / `vapor`) のみ。前者は `pnpm run verify` が
+検証しており、後者は VoiceOver 検証でどちらのタブを操作しているかを
+区別するために意図的に残している。
