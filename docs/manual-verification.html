@@ -1,0 +1,1023 @@
+<meta charset="utf-8">
+<title>Vapor A11y 検証手順</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+
+<style>
+  /* ── トークン: light（既定） ───────────────────────────── */
+  :root {
+    --ground:      #f4f7f6;
+    --surface:     #ffffff;
+    --surface-sunk:#eaf0ee;
+    --ink:         #16211f;
+    --ink-soft:    #3d4d49;
+    --muted:       #63736f;
+    --rule:        #d7e0dd;
+    --rule-strong: #b9c7c3;
+
+    --accent:      #0d6c78;   /* vapor lane / 主アクセント */
+    --accent-soft: #d5eaec;
+    --lane-classic:#8a5a12;   /* classic lane */
+    --ok:          #1f7a4d;
+    --warn:        #a63a1f;
+
+    --code-ground: #101a19;
+    --code-ink:    #dfe9e6;
+    --code-dim:    #8fa5a0;
+
+    --shadow: 0 1px 2px rgba(16, 33, 31, .06), 0 8px 24px -16px rgba(16, 33, 31, .35);
+
+    --font-display: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", serif;
+    --font-body: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    --measure: 68ch;
+    --page: 62rem;
+  }
+
+  /* ── トークン: dark（OS 設定。明示 light 指定には負ける） ── */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #0e1614;
+      --surface:     #16201e;
+      --surface-sunk:#1c2725;
+      --ink:         #e7eeeb;
+      --ink-soft:    #c2cfcb;
+      --muted:       #8fa19c;
+      --rule:        #27332f;
+      --rule-strong: #3a4a45;
+
+      --accent:      #58c2cc;
+      --accent-soft: #113238;
+      --lane-classic:#d9a441;
+      --ok:          #57b487;
+      --warn:        #e08163;
+
+      --code-ground: #0a1211;
+      --code-ink:    #dfe9e6;
+      --code-dim:    #7d918d;
+
+      --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 10px 28px -18px rgba(0, 0, 0, .9);
+    }
+  }
+
+  /* ── トークン: dark（明示指定。OS が light でも勝つ） ──── */
+  :root[data-theme="dark"] {
+    --ground:      #0e1614;
+    --surface:     #16201e;
+    --surface-sunk:#1c2725;
+    --ink:         #e7eeeb;
+    --ink-soft:    #c2cfcb;
+    --muted:       #8fa19c;
+    --rule:        #27332f;
+    --rule-strong: #3a4a45;
+
+    --accent:      #58c2cc;
+    --accent-soft: #113238;
+    --lane-classic:#d9a441;
+    --ok:          #57b487;
+    --warn:        #e08163;
+
+    --code-ground: #0a1211;
+    --code-ink:    #dfe9e6;
+    --code-dim:    #7d918d;
+
+    --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 10px 28px -18px rgba(0, 0, 0, .9);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.85;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* doctype なしでローカル表示した場合（quirks mode）の継承ずれ対策 */
+  table, th, td, input, button { font-family: inherit; font-size: inherit; }
+
+  .page {
+    max-width: var(--page);
+    margin: 0 auto;
+    padding: 0 1.5rem 6rem;
+  }
+
+  /* ── ヘッダ ────────────────────────────────────────── */
+  .masthead {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    padding: 3.5rem 0 2.5rem;
+    border-bottom: 2px solid var(--ink);
+  }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: .75rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(2rem, 5vw, 3rem);
+    line-height: 1.25;
+    letter-spacing: .01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .standfirst {
+    max-width: var(--measure);
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 1.0625rem;
+  }
+
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    margin: .5rem 0 0;
+  }
+  .fact { background: var(--surface); padding: .85rem 1rem; }
+  .fact dt {
+    font-family: var(--font-mono);
+    font-size: .6875rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 .2rem;
+  }
+  .fact dd {
+    margin: 0;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.5;
+  }
+
+  /* ── セクション ────────────────────────────────────── */
+  .part { margin-top: 4.5rem; }
+  .part-head {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    border-bottom: 1px solid var(--rule-strong);
+    padding-bottom: .75rem;
+    margin-bottom: 1.75rem;
+  }
+  .part-tag {
+    flex: none;
+    font-family: var(--font-mono);
+    font-size: .75rem;
+    letter-spacing: .12em;
+    color: var(--surface);
+    background: var(--ink);
+    padding: .2rem .55rem;
+  }
+  h2 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(1.4rem, 3.2vw, 1.9rem);
+    line-height: 1.35;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .part-note {
+    max-width: var(--measure);
+    color: var(--ink-soft);
+    margin: 0 0 1.75rem;
+  }
+
+  /* ── 手順ステップ ──────────────────────────────────── */
+  .steps { display: flex; flex-direction: column; gap: 1.25rem; }
+
+  .step {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    box-shadow: var(--shadow);
+    padding: 1.35rem 1.5rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: .9rem;
+  }
+
+  .step-head { display: flex; align-items: baseline; gap: .75rem; flex-wrap: wrap; }
+  .step-num {
+    flex: none;
+    font-family: var(--font-mono);
+    font-size: .8125rem;
+    font-weight: 500;
+    color: var(--accent);
+    background: var(--accent-soft);
+    padding: .15rem .5rem;
+    font-variant-numeric: tabular-nums;
+  }
+  h3 {
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 1.125rem;
+    line-height: 1.5;
+    margin: 0;
+  }
+  h4 {
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 1rem;
+    margin: 2rem 0 .6rem;
+  }
+  p { margin: 0; max-width: var(--measure); }
+
+  .why { color: var(--ink-soft); font-size: .9375rem; }
+
+  /* ── ラベル ────────────────────────────────────────── */
+  .label {
+    font-family: var(--font-mono);
+    font-size: .6875rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: block;
+    margin: 0 0 .35rem;
+  }
+
+  /* ── コード ────────────────────────────────────────── */
+  pre {
+    margin: 0;
+    background: var(--code-ground);
+    color: var(--code-ink);
+    font-family: var(--font-mono);
+    font-size: .8125rem;
+    line-height: 1.75;
+    padding: .95rem 1.1rem;
+    overflow-x: auto;
+    border-radius: 2px;
+  }
+  pre .c { color: var(--code-dim); }
+  code {
+    font-family: var(--font-mono);
+    font-size: .875em;
+    background: var(--surface-sunk);
+    padding: .1em .35em;
+    border-radius: 2px;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+
+  .expect {
+    border: 1px dashed var(--rule-strong);
+    background: var(--surface-sunk);
+    padding: .85rem 1.1rem;
+    font-family: var(--font-mono);
+    font-size: .8125rem;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    overflow-x: auto;
+    color: var(--ink-soft);
+  }
+
+  /* ── チェック欄 ────────────────────────────────────── */
+  .check {
+    display: flex;
+    align-items: flex-start;
+    gap: .6rem;
+    border-top: 1px solid var(--rule);
+    padding-top: .85rem;
+    font-size: .9375rem;
+    cursor: pointer;
+  }
+  .check input {
+    flex: none;
+    margin: .45rem 0 0;
+    width: 1.05rem;
+    height: 1.05rem;
+    accent-color: var(--accent);
+  }
+  .check span { color: var(--ink-soft); }
+  .check input:checked + span {
+    color: var(--muted);
+    text-decoration: line-through;
+    text-decoration-color: var(--rule-strong);
+  }
+  .check:focus-within { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  /* ── 2系統レーン ──────────────────────────────────── */
+  .lanes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: 1rem;
+  }
+  .lane {
+    border: 1px solid var(--rule);
+    background: var(--surface);
+    padding: 1rem 1.15rem;
+    display: flex;
+    flex-direction: column;
+    gap: .6rem;
+  }
+  .lane-classic { border-top: 3px solid var(--lane-classic); }
+  .lane-vapor   { border-top: 3px solid var(--accent); }
+  .lane-name {
+    font-family: var(--font-mono);
+    font-size: .75rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .lane-classic .lane-name { color: var(--lane-classic); }
+  .lane-vapor .lane-name   { color: var(--accent); }
+  .lane p { font-size: .9375rem; color: var(--ink-soft); }
+
+  /* ── 表 ────────────────────────────────────────────── */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--rule); background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; min-width: 34rem; }
+  caption {
+    text-align: left;
+    padding: .8rem 1rem;
+    font-weight: 700;
+    font-size: .9375rem;
+    border-bottom: 1px solid var(--rule);
+    background: var(--surface-sunk);
+    color: var(--ink);
+  }
+  th, td {
+    text-align: left;
+    padding: .6rem 1rem;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+    font-size: .9375rem;
+    line-height: 1.65;
+  }
+  thead th {
+    font-family: var(--font-mono);
+    font-size: .6875rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.num, th.num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+    width: 2.5rem;
+    white-space: nowrap;
+  }
+  td.keys { white-space: nowrap; }
+
+  kbd {
+    font-family: var(--font-mono);
+    font-size: .78em;
+    background: var(--surface-sunk);
+    border: 1px solid var(--rule-strong);
+    border-bottom-width: 2px;
+    border-radius: 3px;
+    padding: .1em .4em;
+    white-space: nowrap;
+    color: var(--ink);
+  }
+
+  /* ── 注意ボックス ──────────────────────────────────── */
+  .callout {
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--warn);
+    background: var(--surface);
+    padding: .95rem 1.15rem;
+    display: flex;
+    flex-direction: column;
+    gap: .45rem;
+  }
+  .callout .label { color: var(--warn); }
+  .callout p { font-size: .9375rem; }
+
+  .rule-box {
+    border: 2px solid var(--ink);
+    background: var(--surface);
+    padding: 1.15rem 1.35rem;
+    margin-bottom: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+  }
+  .rule-box strong { font-size: 1.0625rem; }
+
+  ul, ol { max-width: var(--measure); margin: 0; padding-left: 1.3rem; }
+  li { margin: .3rem 0; }
+  li::marker { color: var(--muted); }
+
+  a { color: var(--accent); text-underline-offset: 3px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  footer.colophon {
+    margin-top: 5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--rule);
+    color: var(--muted);
+    font-size: .875rem;
+  }
+
+  @media print {
+    body { background: #fff; }
+    .step, .lane, .table-wrap, .callout { box-shadow: none; break-inside: avoid; }
+    .part { break-before: page; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<div class="page">
+
+  <header class="masthead">
+    <p class="eyebrow">vue-vapor-a11y-experiment / 手動検証</p>
+    <h1>Vapor Mode のアクセシビリティ検証を手で回す</h1>
+    <p class="standfirst">
+      classic (VDOM) と vapor (Vapor Mode) の2系統を同一ソースから展開し、機械比較 (ariaSnapshot) と
+      人による読み上げ確認 (VoiceOver) の両方で差分を取るための作業手順。
+      上から順に実行すれば、リポジトリの検証結果を最初から再現できる。
+    </p>
+    <dl class="facts">
+      <div class="fact"><dt>Node.js</dt><dd>22.x 以上 (20.19+ 可)</dd></div>
+      <div class="fact"><dt>パッケージ管理</dt><dd>pnpm 11.x（npm 不可）</dd></div>
+      <div class="fact"><dt>検証対象</dt><dd>vue@3.6.0-rc.3</dd></div>
+      <div class="fact"><dt>スクリーンリーダー</dt><dd>VoiceOver (macOS) + Safari</dd></div>
+      <div class="fact"><dt>検証カテゴリ</dt><dd>5 カテゴリ / 15 スナップショット</dd></div>
+    </dl>
+  </header>
+
+  <!-- ══════════════ PART A ══════════════ -->
+  <section class="part">
+    <div class="part-head">
+      <span class="part-tag">PART A</span>
+      <h2>リポジトリの手動検証</h2>
+    </div>
+    <p class="part-note">
+      ステップ 01 から 07 は前のステップの成果物に依存するため、順番に実行する（08 は任意）。
+      各ステップの「期待される結果」と手元の出力が食い違ったら、その場で止めて
+      巻末の早見表か <a href="./troubleshooting.md">troubleshooting.md</a> を見る。
+    </p>
+
+    <div class="steps">
+
+      <!-- 01 -->
+      <article class="step">
+        <div class="step-head">
+          <span class="step-num">01</span>
+          <h3>依存関係をインストールする</h3>
+        </div>
+        <p class="why">
+          <code>vue@3.6.0-rc.3</code> は semver 上プレリリース扱いのため、npm では
+          <code>@vitejs/plugin-vue</code> の peer dependency <code>vue@^3.2.25</code> を満たさないと判定され
+          <code>ERESOLVE</code> で失敗する。pnpm を使うこと。
+        </p>
+        <div>
+          <span class="label">コマンド</span>
+          <pre><code>node -v          <span class="c"># 22.x 以上であること</span>
+pnpm -v          <span class="c"># 11.x であること</span>
+pnpm install</code></pre>
+        </div>
+        <div>
+          <span class="label">期待される結果</span>
+          <div class="expect">エラーも peer dependency 警告も出ずに完了する。</div>
+        </div>
+        <label class="check"><input type="checkbox"><span>pnpm install がエラーなく完了した</span></label>
+      </article>
+
+      <!-- 02 -->
+      <article class="step">
+        <div class="step-head">
+          <span class="step-num">02</span>
+          <h3>2系統へ配布し、ソースが完全同一であることを確認する</h3>
+        </div>
+        <p class="why">
+          この検証の前提は「classic と vapor のコンポーネントソースはバイト単位で同一」という点にある。
+          Vapor モードの指定はビルド設定側にあり、コンポーネントには現れない。
+          ここが崩れると、観測された差分の原因を Vapor Mode に帰属できなくなる。
+          手で編集してよいのは <code>source/components/</code> と <code>e2e/scenarios/</code> だけで、
+          <code>apps/*/src/</code> は <code>pnpm run sync</code> の生成物。
+        </p>
+        <div>
+          <span class="label">コマンド</span>
+          <pre><code>pnpm run sync
+
+diff -r apps/classic/src/components apps/vapor/src/components</code></pre>
+        </div>
+        <div>
+          <span class="label">期待される結果</span>
+          <div class="expect">synced -&gt; apps/classic/src (6 files)
+synced -&gt; apps/vapor/src (6 files)
+✅ 全 lane のソースがバイト単位で同一 (6 files)
+
+（diff は何も出力しない）</div>
+        </div>
+        <div class="callout">
+          <span class="label">なぜ置換をやめたか</span>
+          <p>以前は vapor 側だけ <code>&lt;script setup&gt;</code> を <code>&lt;script setup vapor&gt;</code> に
+          文字列置換していた。完全一致に依存するため、たとえば <code>lang="ts"</code> を付けた途端に
+          無言で不一致になり、vapor 側が classic としてビルドされて「差分なし」という
+          偽の成功を出す危険があった。現在はビルド設定側の <code>features.vapor</code> で指定しており、
+          判定条件は <code>&lt;script setup&gt;</code> の有無のみで <code>lang="ts"</code> に依存しない。</p>
+        </div>
+        <label class="check"><input type="checkbox"><span><code>diff -r</code> が何も出力せず、同一性の assert が通った</span></label>
+      </article>
+
+      <!-- 03 -->
+      <article class="step">
+        <div class="step-head">
+          <span class="step-num">03</span>
+          <h3>両系統をビルドする</h3>
+        </div>
+        <p class="why">
+          このあとのスモークテストと E2E はどちらもビルド成果物 (<code>apps/*/dist</code>) を読む。
+          ここでバンドルサイズも記録しておくと、ランタイム差の根拠になる。
+        </p>
+        <div>
+          <span class="label">コマンド</span>
+          <pre><code>pnpm run build   <span class="c"># build:classic と build:vapor をまとめて実行する</span></code></pre>
+        </div>
+        <div>
+          <span class="label">期待される結果（2026-08-21 計測時の参考値）</span>
+          <div class="lanes">
+            <div class="lane lane-classic">
+              <span class="lane-name">classic</span>
+              <p>69.65 kB / gzip 27.39 kB</p>
+            </div>
+            <div class="lane lane-vapor">
+              <span class="lane-name">vapor</span>
+              <p>51.12 kB / gzip 19.64 kB</p>
+            </div>
+          </div>
+        </div>
+        <p class="why">
+          vapor 側は VDOM ランタイムを含まないぶん gzip で約 28% 小さい。
+          検証カテゴリを増やすとアプリ固有コードが両系統に等しく積み上がるため比率は縮む。
+          意味があるのは差の絶対値（gzip 約 7.7 kB）のほう。
+        </p>
+        <label class="check"><input type="checkbox"><span>両系統のビルドが成功し、サイズを記録した</span></label>
+      </article>
+
+      <!-- 04 -->
+      <article class="step">
+        <div class="step-head">
+          <span class="step-num">04</span>
+          <h3>ガードを検証する（この検証の要）</h3>
+        </div>
+        <p class="why">
+          「Vapor モードが効いていないまま両系統を classic としてビルドしていた」という
+          事故を防ぐための検証。この状態でも E2E は通り差分ゼロが出てしまうため、
+          <strong>ここを通していない「差分なし」は結果として扱えない</strong>。
+          差分レポートを読む前に必ず実行する。
+        </p>
+        <div>
+          <span class="label">コマンド</span>
+          <pre><code>pnpm run verify</code></pre>
+        </div>
+        <div>
+          <span class="label">期待される結果</span>
+          <div class="expect">✅ 全 lane のソースがバイト単位で同一 (6 files)
+
+| lane | 期待 vapor | 期待マウント関数 | HTML文字列テンプレート | VNode props | 判定 |
+|---|---|---|---|---|---|
+| classic | false | createApp | 0 | 11 | ✅ OK |
+| vapor | true | createVaporApp | 7 | 0 | ✅ OK |
+
+✅ 両 lane が意図どおり別のコンパイル戦略でビルドされています</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <caption>何を見ているか</caption>
+            <thead>
+              <tr><th>検証内容</th><th>防ぐ事故</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>2系統のコンポーネントソースがバイト単位で同一</td><td>片方だけ編集し、差分の原因を Vapor だと取り違える</td></tr>
+              <tr><td>ビルド設定と entry が lane のあるべき姿と一致</td><td>設定を間違えたまま比較して気付かない</td></tr>
+              <tr><td>成果物が意図したコンパイル戦略で生成されている</td><td>プラグインが指定を無視し、classic 同士を比較する</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout">
+          <span class="label">判定</span>
+          <p>どちらかの lane が ❌ NG なら、そこで止める。出力されたメッセージ別の対処は
+          <a href="./troubleshooting.md">troubleshooting.md</a> の
+          「<code>pnpm run verify</code> が失敗する」を見る。
+          この状態で得た「差分 0 件」は無効。</p>
+        </div>
+        <label class="check"><input type="checkbox"><span>両 lane が ✅ OK だった</span></label>
+      </article>
+
+      <!-- 05 -->
+      <article class="step">
+        <div class="step-head">
+          <span class="step-num">05</span>
+          <h3>スモークテストで配線を確認する</h3>
+        </div>
+        <p class="why">
+          happy-dom 上でビルド成果物を読み込み、「保存」ボタンの押下が <code>role=status</code> に
+          反映されるかだけを見る最小チェック。Vapor は素の DOM API を直接叩くため、
+          ここで落ちるならアクセシビリティ以前の問題。
+        </p>
+        <div>
+          <span class="label">コマンド</span>
+          <pre><code>pnpm run smoke</code></pre>
+        </div>
+        <div>
+          <span class="label">期待される結果</span>
+          <div class="expect">[classic] click前: "" → click後: "保存しました"
+[vapor] click前: "" → click後: "保存しました"</div>
+        </div>
+        <div class="callout">
+          <span class="label">つまずきやすい点</span>
+          <p><code>dist</code> が見つからない場合はステップ 03 を先に実行する。ステップ 08 の
+          <code>--minify false</code> ビルドを行った直後も、通常ビルドに戻してから実行すること。</p>
+        </div>
+        <label class="check"><input type="checkbox"><span>両系統とも「保存しました」に更新された</span></label>
+      </article>
+
+      <!-- 06 -->
+      <article class="step">
+        <div class="step-head">
+          <span class="step-num">06</span>
+          <h3>ariaSnapshot を取得する（E2E）</h3>
+        </div>
+        <p class="why">
+          Playwright が classic を <code>:4173</code>、vapor を <code>:4174</code> でプレビュー起動し
+          （ビルドも自動で走る）、5カテゴリ × 各時点のアクセシビリティツリーを
+          <code>e2e/snapshots/{classic,vapor}/</code> に YAML で保存する。
+          ブラウザ本体が未取得の場合は初回だけインストールが要る。
+        </p>
+        <div>
+          <span class="label">コマンド</span>
+          <pre><code>pnpm exec playwright install chromium   <span class="c"># 初回のみ</span>
+pnpm run test:e2e</code></pre>
+        </div>
+        <div>
+          <span class="label">期待される結果</span>
+          <div class="expect">全シナリオ pass。e2e/snapshots/classic と e2e/snapshots/vapor に
+それぞれ 15 個の .yaml が生成される。</div>
+        </div>
+        <div class="callout">
+          <span class="label">タイミング由来の偽陽性に注意</span>
+          <p>スナップショット取得前に状態が確定していないと、Vapor とは無関係な差分が出る。
+          シナリオを足すときは必ず <code>expect(...)</code> で状態を待ってから取得する。</p>
+        </div>
+        <label class="check"><input type="checkbox"><span>両系統で 15 スナップショットずつ生成された</span></label>
+      </article>
+
+      <!-- 07 -->
+      <article class="step">
+        <div class="step-head">
+          <span class="step-num">07</span>
+          <h3>差分レポートを生成して読む</h3>
+        </div>
+        <p class="why">
+          比較の向きは「classic の同一時点 vs vapor の同一時点」。
+          同じ系統内の before / after を比べているのではない。
+        </p>
+        <div>
+          <span class="label">コマンド</span>
+          <pre><code>pnpm run diff
+open results/diff-report.md</code></pre>
+        </div>
+        <div>
+          <span class="label">期待される結果</span>
+          <div class="expect">results/diff-report.md を出力 (15件中 差分あり 0件)</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <caption>差分が「あり」になった場合の切り分け</caption>
+            <thead>
+              <tr><th>症状</th><th>まず疑うこと</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>特定シナリオだけ差分あり</td><td>スナップショット取得前の待ち合わせ不足。<code>expect</code> を足して再実行する</td></tr>
+              <tr><td>全シナリオで差分あり</td><td>ステップ 04 の <code>pnpm run verify</code> を通しているか確認する</td></tr>
+              <tr><td>vapor 側だけ「取得なし」</td><td><code>:4174</code> のプレビューが立っていない、または vapor 側のシナリオが失敗している</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <label class="check"><input type="checkbox"><span>差分レポートを確認し、結果を記録した</span></label>
+      </article>
+
+      <!-- 08 -->
+      <article class="step">
+        <div class="step-head">
+          <span class="step-num">08</span>
+          <h3>（任意）生成コードそのものを読む</h3>
+        </div>
+        <p class="why">
+          コンパイル方式が切り替わっているかの判定はステップ 04 の <code>pnpm run verify</code> で
+          済んでいる。このステップは発表資料向けに「Vapor が実際にどんなコードを吐くか」を
+          目で確かめたいときだけ行う。minify なしでビルドして成果物を grep する。
+        </p>
+        <div>
+          <span class="label">コマンド</span>
+          <pre><code>pnpm exec vite build --config apps/vapor/vite.config.mjs --minify false
+pnpm exec vite build --config apps/classic/vite.config.mjs --minify false
+
+grep -oE 'template\("[^"]{0,40}|setText|setAttr|VaporComponent|createIf' \
+  apps/vapor/dist/assets/*.js | sort -u
+grep -oE 'createElementBlock|createVNode|openBlock|toDisplayString' \
+  apps/classic/dist/assets/*.js | sort -u</code></pre>
+        </div>
+        <div>
+          <span class="label">期待される結果</span>
+          <div class="lanes">
+            <div class="lane lane-vapor">
+              <span class="lane-name">vapor 側に出る</span>
+              <p><code>VaporComponent</code> / <code>createIf</code> / <code>setAttr</code> / <code>setText</code> /
+              <code>template("&lt;div role=dialog aria-modal=true …</code></p>
+              <p>HTML 文字列テンプレート + 直接 DOM 操作。静的な aria 属性が
+              <code>template()</code> の文字列に焼き込まれている点が重要。</p>
+            </div>
+            <div class="lane lane-classic">
+              <span class="lane-name">classic 側に出る</span>
+              <p><code>createElementBlock</code> / <code>createVNode</code> / <code>openBlock</code> /
+              <code>toDisplayString</code></p>
+              <p>VNode 生成を経由する従来のコンパイル戦略。</p>
+            </div>
+          </div>
+        </div>
+        <div class="callout">
+          <span class="label">後始末（必須）</span>
+          <p>観察後は <code>pnpm run build</code> で通常ビルドに戻す。minify なしの成果物は
+          サイズが大きく、そのままだとバンドルサイズの計測値として使えないうえ、
+          スモークテストや E2E にも影響する。</p>
+        </div>
+        <label class="check"><input type="checkbox"><span>生成コードを確認し、通常ビルドに戻した</span></label>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- ══════════════ PART B ══════════════ -->
+  <section class="part">
+    <div class="part-head">
+      <span class="part-tag">PART B</span>
+      <h2>macOS VoiceOver での読み上げ検証</h2>
+    </div>
+    <p class="part-note">
+      <code>ariaSnapshot</code> はアクセシビリティツリーの構造を機械的に比較できるが、
+      「スクリーンリーダーが実際にどう読み上げるか」までは保証しない。そこを埋めるのがこの検証。
+      記録先は <a href="../results/voiceover-log.md">results/voiceover-log.md</a>。
+    </p>
+
+    <div class="rule-box">
+      <strong>唯一かつ最重要のルール</strong>
+      <p>classic (<code>localhost:4173</code>) と vapor (<code>localhost:4174</code>) で
+      <strong>完全に同じキー操作</strong>を行う。操作が違えば、読み上げの違いが
+      Vapor 起因なのか操作起因なのか切り分けられなくなる。</p>
+      <p>カテゴリを移動するたびに<strong>ページを再読み込みする</strong>。前の操作で残った状態
+      （開いたままのダイアログ、表示済みのエラー）が次の読み上げに混ざると、差分の原因を追えなくなる。</p>
+    </div>
+
+    <h4>準備 1 — プレビューサーバを2つ起動する</h4>
+    <p class="why">別々のターミナルで起動し、検証中は両方立てたままにする。</p>
+    <pre><code>pnpm run build:classic &amp;&amp; pnpm exec vite preview --config apps/classic/vite.config.mjs --port 4173
+pnpm run build:vapor   &amp;&amp; pnpm exec vite preview --config apps/vapor/vite.config.mjs   --port 4174</code></pre>
+
+    <h4>準備 2 — VoiceOver とキャプションパネル</h4>
+    <p class="why">
+      読み上げ内容を画面に字幕表示させる。録画にそのまま残るので、あとから文言を突き合わせられる。
+      以下の <kbd>VO</kbd> は <kbd>Control</kbd> + <kbd>Option</kbd> の同時押しを指す。
+    </p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th class="num">#</th><th>操作</th><th>キー</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="num">1</td><td>VoiceOver を起動する</td><td class="keys"><kbd>⌘</kbd> + <kbd>F5</kbd></td></tr>
+          <tr><td class="num">2</td><td>VoiceOver ユーティリティを開く</td><td class="keys"><kbd>VO</kbd> + <kbd>F8</kbd></td></tr>
+          <tr><td class="num">3</td><td>「ビジュアル」→「キャプションパネル」を有効化する</td><td class="keys">—</td></tr>
+          <tr><td class="num">4</td><td>画面収録を開始する（マイク ON で読み上げ音声も残る）</td><td class="keys"><kbd>⇧</kbd> + <kbd>⌘</kbd> + <kbd>5</kbd></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4>記録の取り方</h4>
+    <ul>
+      <li>読み上げ全文は<strong>キャプションパネルの表示テキストをそのまま書き写す</strong>。聞き取りでの書き起こしは表記ゆれが入るため不可。</li>
+      <li>一致欄は ◯ / ✕ のみ。「ほぼ同じ」は ✕ として、違いの内容を本文に書く。</li>
+      <li>✕ が出たら、まず該当カテゴリの ariaSnapshot に差分が出ていないかを確認する。
+        <strong>ツリーは一致しているのに読み上げだけ違う</strong>なら、それはこの検証でしか見つからない最も価値のある発見。</li>
+    </ul>
+
+    <p class="part-note" style="margin-top:1.75rem">
+      以下の5カテゴリを、それぞれ classic → vapor の順で同一操作する。
+    </p>
+
+    <div class="steps">
+
+      <article class="step">
+        <div class="step-head">
+          <span class="step-num">B1</span>
+          <h3>live region: トースト通知</h3>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th class="num">#</th><th>操作</th><th>キー</th></tr></thead>
+            <tbody>
+              <tr><td class="num">1</td><td>Safari で対象 URL を開く</td><td class="keys">—</td></tr>
+              <tr><td class="num">2</td><td>フォーカスを「保存」へ移動し、読み上げを記録する</td><td class="keys"><kbd>Tab</kbd></td></tr>
+              <tr><td class="num">3</td><td>ボタンを押下する</td><td class="keys"><kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
+              <tr><td class="num">4</td><td>live region の読み上げを記録する</td><td class="keys">（自動読み上げ）</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="why"><strong>見るべき点：</strong><code>role=status</code> は控えめな通知なので、読み上げ中の内容を中断しない。
+        中断されるようなら差分として記録する。</p>
+        <label class="check"><input type="checkbox"><span>classic / vapor 両方で記録した</span></label>
+      </article>
+
+      <article class="step">
+        <div class="step-head">
+          <span class="step-num">B2</span>
+          <h3>フォーカス管理: モーダルダイアログ</h3>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th class="num">#</th><th>操作</th><th>キー</th></tr></thead>
+            <tbody>
+              <tr><td class="num">1</td><td>フォーカスを「設定を開く」へ移動する</td><td class="keys"><kbd>Tab</kbd></td></tr>
+              <tr><td class="num">2</td><td>押下してダイアログを開き、直後の読み上げを記録する</td><td class="keys"><kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
+              <tr><td class="num">3</td><td>フォーカスを「閉じる」へ移動する</td><td class="keys"><kbd>Tab</kbd></td></tr>
+              <tr><td class="num">4</td><td>押下して閉じ、直後の読み上げを記録する</td><td class="keys"><kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
+              <tr><td class="num">5</td><td>ダイアログの外へ出られるか試す</td><td class="keys"><kbd>VO</kbd> + <kbd>→</kbd></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="why"><strong>最も差分の出る可能性が高い項目。</strong>見るべきは3点。</p>
+        <ul>
+          <li>開いたとき「ダイアログ 表示設定」のようにロールごと読み上げるか</li>
+          <li>閉じたときフォーカスが「設定を開く」に戻り、それが読み上げられるか</li>
+          <li>ダイアログの外に <kbd>VO</kbd> + <kbd>→</kbd> で出られてしまわないか（<code>aria-modal</code> の効き）</li>
+        </ul>
+        <label class="check"><input type="checkbox"><span>classic / vapor 両方で記録した</span></label>
+      </article>
+
+      <article class="step">
+        <div class="step-head">
+          <span class="step-num">B3</span>
+          <h3>動的 aria 属性: 開閉パネル</h3>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th class="num">#</th><th>操作</th><th>キー</th></tr></thead>
+            <tbody>
+              <tr><td class="num">1</td><td>フォーカスを「コンパイル結果の詳細」へ移動する</td><td class="keys"><kbd>Tab</kbd></td></tr>
+              <tr><td class="num">2</td><td>折りたたみ状態の読み上げを記録する</td><td class="keys">（自動読み上げ）</td></tr>
+              <tr><td class="num">3</td><td>押下して開き、展開後の読み上げを記録する</td><td class="keys"><kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="why"><strong>見るべき点：</strong>「折りたたみ済み」→「展開済み」と <code>aria-expanded</code> の状態変化が
+        読み上げられるか。ボタン名だけ読んで状態を言わない場合は差分として記録する。</p>
+        <label class="check"><input type="checkbox"><span>classic / vapor 両方で記録した</span></label>
+      </article>
+
+      <article class="step">
+        <div class="step-head">
+          <span class="step-num">B4</span>
+          <h3>フォームエラー: 入力検証</h3>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th class="num">#</th><th>操作</th><th>キー</th></tr></thead>
+            <tbody>
+              <tr><td class="num">1</td><td>フォーカスを入力欄へ移動し、ラベルの読み上げを記録する</td><td class="keys"><kbd>Tab</kbd></td></tr>
+              <tr><td class="num">2</td><td><code>not-an-email</code> と入力する</td><td class="keys">（キーボード入力）</td></tr>
+              <tr><td class="num">3</td><td>「送信」へ移動して押下し、エラー発生時の読み上げを記録する</td><td class="keys"><kbd>Tab</kbd> → <kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
+              <tr><td class="num">4</td><td>入力欄へ戻り、エラーと紐付いた状態の読み上げを記録する</td><td class="keys"><kbd>VO</kbd> + <kbd>←</kbd></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="why"><strong>見るべき点：</strong>入力欄にフォーカスを戻したとき <code>aria-describedby</code> 経由で
+        エラー文が読み上げられるか。<code>role=alert</code> の即時読み上げとは別物なので、両方を別々に記録する。</p>
+        <label class="check"><input type="checkbox"><span>classic / vapor 両方で記録した</span></label>
+      </article>
+
+      <article class="step">
+        <div class="step-head">
+          <span class="step-num">B5</span>
+          <h3>条件付き描画: v-if と v-show</h3>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th class="num">#</th><th>操作</th><th>キー</th></tr></thead>
+            <tbody>
+              <tr><td class="num">1</td><td>フォーカスを「補足を切り替え」へ移動する</td><td class="keys"><kbd>Tab</kbd></td></tr>
+              <tr><td class="num">2</td><td>押下して表示する</td><td class="keys"><kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
+              <tr><td class="num">3</td><td>後続要素を順に読ませ、2つの補足を記録する</td><td class="keys"><kbd>VO</kbd> + <kbd>→</kbd></td></tr>
+              <tr><td class="num">4</td><td>再度押下して非表示にする</td><td class="keys"><kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
+              <tr><td class="num">5</td><td>後続に補足が現れないことを確認する</td><td class="keys"><kbd>VO</kbd> + <kbd>→</kbd></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="why"><strong>見るべき点：</strong><code>v-if</code>（DOM ごと出入り）と <code>v-show</code>（display 切り替え）で
+        読み上げの扱いが変わらないこと。非表示時にどちらか一方だけ読み上げられたら差分として記録する。</p>
+        <label class="check"><input type="checkbox"><span>classic / vapor 両方で記録した</span></label>
+      </article>
+
+    </div>
+
+    <h4>環境の明記は必須</h4>
+    <p class="why">
+      読み上げ挙動は以下に強く依存し、環境が違えば結果は再現しない。
+      「差分なし」という結論の適用範囲を示すために、発表資料と README に必ず書く。
+    </p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>記録項目</th><th>備考</th></tr></thead>
+        <tbody>
+          <tr><td>検証日</td><td>YYYY-MM-DD</td></tr>
+          <tr><td>macOS のバージョン</td><td>例: 26.5.2</td></tr>
+          <tr><td>Safari のバージョン</td><td>ブラウザが変われば読み上げも変わる</td></tr>
+          <tr><td>VoiceOver 詳細度設定</td><td>「詳細度」→「テキストの読み上げ」など</td></tr>
+          <tr><td>vue のバージョン</td><td>例: 3.6.0-rc.3</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══════════════ 付録 ══════════════ -->
+  <section class="part">
+    <div class="part-head">
+      <span class="part-tag">付録</span>
+      <h2>つまずいたときの早見表</h2>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>症状</th><th>原因</th><th>対処</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>npm install</code> が <code>ERESOLVE</code> で失敗する</td>
+            <td>npm がプレリリース版 vue を peer の範囲外と判定する</td>
+            <td>pnpm を使う。npm 必須なら <code>--legacy-peer-deps</code></td>
+          </tr>
+          <tr>
+            <td>差分がゼロすぎて疑わしい</td>
+            <td>Vapor モードが効かず classic 同士を比較している可能性</td>
+            <td>Part A ステップ 04 の <code>pnpm run verify</code> を実行する</td>
+          </tr>
+          <tr>
+            <td>Vapor 化したコンポーネントがエラーになる</td>
+            <td>Options API / Suspense は Vapor の対象外</td>
+            <td><code>&lt;script setup&gt;</code> + Composition API のみで書く</td>
+          </tr>
+          <tr>
+            <td>取得タイミング由来の差分が出る</td>
+            <td>スナップショット取得前に状態が確定していない</td>
+            <td><code>expect(...)</code> で待つ。それでもブレるなら <code>page.waitForLoadState()</code> を足す</td>
+          </tr>
+          <tr>
+            <td>フォーカスを動かしても差分が出ない</td>
+            <td><code>ariaSnapshot()</code> の出力にフォーカス位置は含まれない</td>
+            <td><code>page.locator(':focus').ariaSnapshot()</code> を別時点として保存する</td>
+          </tr>
+          <tr>
+            <td><code>pnpm run smoke</code> が空振りする</td>
+            <td>ボタンをテキストで特定しているため、文言変更で外れる</td>
+            <td><code>scripts/smoke-test.mjs</code> の対象テキストを合わせる</td>
+          </tr>
+          <tr>
+            <td><code>pnpm run diff</code> が「スナップショットがありません」で終わる</td>
+            <td><code>e2e/snapshots/</code> が未生成</td>
+            <td>先に <code>pnpm run test:e2e</code> を実行する</td>
+          </tr>
+          <tr>
+            <td><code>pnpm run smoke</code> が dist を見つけられない</td>
+            <td>ビルド成果物がない、または minify なしのまま</td>
+            <td><code>pnpm run build</code> で通常ビルドをやり直す</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4>関連ドキュメント</h4>
+    <ul>
+      <li><a href="../README.md">README.md</a> — 設計原則と検証エビデンス</li>
+      <li><a href="./adding-scenarios.md">docs/adding-scenarios.md</a> — 検証項目を増やすときの定型フロー</li>
+      <li><a href="./voiceover-procedure.md">docs/voiceover-procedure.md</a> — VoiceOver 手順の原典（Markdown 版）</li>
+      <li><a href="./troubleshooting.md">docs/troubleshooting.md</a> — トラブルシューティング</li>
+      <li><a href="../results/diff-report.md">results/diff-report.md</a> — ariaSnapshot 差分レポート（自動生成）</li>
+      <li><a href="../results/voiceover-log.md">results/voiceover-log.md</a> — VoiceOver 読み上げ記録の記入先</li>
+    </ul>
+  </section>
+
+  <footer class="colophon">
+    <p>
+      vue-vapor-a11y-experiment の検証手順書。Vue Fes Japan 2026「Vapor Modeでアクセシビリティは壊れないか検証した話」の裏付け作業用。
+      チェックボックスの状態は保存されないので、印刷するか1セッションで通して使うこと。
+    </p>
+  </footer>
+
+</div>
