@@ -4,6 +4,7 @@ import FocusDialog from './components/FocusDialog.vue'
 import DisclosurePanel from './components/DisclosurePanel.vue'
 import ValidatedForm from './components/ValidatedForm.vue'
 import ConditionalBlocks from './components/ConditionalBlocks.vue'
+import ReorderableList from './components/ReorderableList.vue'
 </script>
 
 <template>
@@ -14,5 +15,6 @@ import ConditionalBlocks from './components/ConditionalBlocks.vue'
     <DisclosurePanel />
     <ValidatedForm />
     <ConditionalBlocks />
+    <ReorderableList />
   </main>
 </template>
