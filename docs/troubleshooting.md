@@ -12,18 +12,36 @@
 
 ## vapor 側の挙動が classic と全く同じで、差分がゼロすぎる
 
-**原因**: `vapor` 属性が効いていない可能性。
+**原因**: Vapor モードが効いておらず、classic 同士を比較している可能性。
 
-**対処**: minify なしビルドの成果物を grep して、コード生成方式が実際に
-切り替わっているか確認する。
+**対処**: `pnpm run verify` を実行する。両 lane の判定が ✅ OK なら、
+差分ゼロは本物の結果である。
 
 ```sh
-pnpm exec vite build --config apps/vapor/vite.config.mjs --minify false
-grep -oE 'template\("[^"]*"|setText|VaporComponent' apps/vapor/dist/assets/*.js | sort -u
+pnpm run verify
 ```
 
-vapor 側に `VaporComponent` / `setText` / `template("...")` が出れば正しく
-切り替わっている。出ずに `createVNode` が出るなら vapor 属性が効いていない。
+このスクリプトは通常ビルドの成果物をそのまま判定するので、
+`--minify false` でビルドし直す必要はない。生成コードそのものを
+読みたい場合の手順は [../README.md](../README.md) の
+「コード生成方式が本当に切り替わっているか」を参照。
+
+## `pnpm run verify` が失敗する
+
+出力されたメッセージごとに原因が違う。
+
+| メッセージ | 原因と対処 |
+|---|---|
+| `... の内容が一致しません` | `apps/*/src` を直接編集した。`source/components/` を編集して `pnpm run sync` をやり直す |
+| `scripts/lanes.mjs の {lane}.vapor が ... であるべきです` | ビルド設定を取り違えている。`scripts/lanes.mjs` を戻す |
+| `main.js が {関数} を使っていません` | entry のマウント関数が lane と食い違っている。`apps/{lane}/src/main.js` を直す |
+| `HTML 文字列テンプレート (Vapor) が 0 件` | vapor lane が Vapor でビルドされていない。設定を直して `pnpm run build` をやり直す |
+| `VNode props オブジェクト (VDOM) が N 件検出されました` | 想定と逆のコンパイル戦略になっている。同上 |
+| `... がありません。先に pnpm run build:{lane} を...` | ビルド前に実行した。`pnpm run build` を先に実行する |
+
+マーカーが 0 件になるのは、コンパイル戦略が違う場合と、Vue 側の実装変更で
+マーカー自体が通用しなくなった場合の両方がありうる。前者でないと確認できたら
+`scripts/verify-vapor-mode.mjs` の `MARKERS` を実測し直す。
 
 ## Vapor 化したコンポーネントがエラーになる
 
@@ -64,9 +82,10 @@ const focusOpened = await page.locator(':focus').ariaSnapshot()
 
 ## Vue 3.6 stable が出て結果の鮮度が心配
 
-**対処**: `package.json` のバージョンを上げて
-`pnpm run test:e2e && pnpm run diff` を再実行するだけ。
-この追試の速さがこの構成の狙いそのもの。
+**対処**: `package.json` のバージョンを上げて `pnpm run check` を再実行するだけ。
+この追試の速さがこの構成の狙いそのもの。バージョンを上げた直後は
+Vapor 側の実装が変わっている可能性があるため、`check` に含まれる
+`verify` の結果を必ず確認する。
 
 ## `pnpm run diff` が「スナップショットがありません」で終了する
 
@@ -78,5 +97,5 @@ const focusOpened = await page.locator(':focus').ariaSnapshot()
 
 **原因**: スモークテストはビルド成果物 (`apps/*/dist/assets/*.js`) を読み込む。
 
-**対処**: 先に `pnpm run build:classic && pnpm run build:vapor` を実行する。
+**対処**: 先に `pnpm run build` を実行する。
 `--minify false` でビルドした直後の場合も、通常ビルドに戻してから実行する。

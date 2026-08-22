@@ -3,14 +3,17 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "sync": "node scripts/sync-vapor.mjs",
+    "sync": "node scripts/sync-sources.mjs",
     "dev:classic": "vite --config apps/classic/vite.config.mjs",
     "dev:vapor": "vite --config apps/vapor/vite.config.mjs",
     "build:classic": "vite build --config apps/classic/vite.config.mjs",
     "build:vapor": "vite build --config apps/vapor/vite.config.mjs",
+    "build": "pnpm run build:classic && pnpm run build:vapor",
+    "verify": "node scripts/verify-vapor-mode.mjs",
     "smoke": "node scripts/smoke-test.mjs",
     "test:e2e": "playwright test",
-    "diff": "node scripts/diff-snapshots.mjs"
+    "diff": "node scripts/diff-snapshots.mjs",
+    "check": "pnpm run sync && pnpm run build && pnpm run verify && pnpm run smoke && pnpm run test:e2e && pnpm run diff"
   },
   "dependencies": {
     "vue": "3.6.0-rc.3"

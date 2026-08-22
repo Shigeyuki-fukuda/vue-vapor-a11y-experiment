@@ -5,11 +5,16 @@
 
 | # | 作業 | コマンド / 場所 |
 |---|---|---|
-| 1 | コンポーネントを classic 構文で追加 | `source/components/ModalDialog.vue` など。`source/components/App.vue` にも追加 |
-| 2 | 2系統へ展開 | `pnpm run sync` |
+| 1 | コンポーネントを追加 | `source/components/ModalDialog.vue` など。`source/components/App.vue` にも追加 |
+| 2 | 2系統へ配布 | `pnpm run sync` |
 | 3 | 動作の目視確認 | `pnpm run dev:classic` / `pnpm run dev:vapor` を並べて開く |
-| 4 | シナリオ追加 → スナップショット取得 | `e2e/scenarios/<名前>.spec.mjs` を既存からコピーして作成 → `pnpm run test:e2e && pnpm run diff` |
+| 4 | シナリオ追加 → スナップショット取得 | `e2e/scenarios/<名前>.spec.mjs` を既存からコピーして作成 → `pnpm run check` |
 | 5 | `docs/voiceover-procedure.md` に項目追加 → 結果を記録 | `results/voiceover-log.md` |
+
+手順4の `pnpm run check` は配布・ビルド・ガード検証・スモーク・E2E・差分集計を
+通しで実行する。個別に回す場合も、**差分を読む前に必ず `pnpm run verify` を通す**。
+Vapor モードが効いていない状態では差分ゼロが自動的に出てしまうため、
+verify を通していない「差分なし」は結果として扱えない。
 
 ## 1. コンポーネントの追加
 
