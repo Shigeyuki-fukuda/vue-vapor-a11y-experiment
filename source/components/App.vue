@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import LiveRegionToast from './components/LiveRegionToast.vue'
 import FocusDialog from './components/FocusDialog.vue'
 import DisclosurePanel from './components/DisclosurePanel.vue'

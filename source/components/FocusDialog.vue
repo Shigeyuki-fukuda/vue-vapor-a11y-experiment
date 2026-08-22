@@ -1,9 +1,11 @@
-<script setup>
+<script setup lang="ts">
 import { nextTick, ref } from 'vue'
 
 const isOpen = ref(false)
-const dialogRef = ref(null)
-const openerRef = ref(null)
+// 要素型を明示する。ref(null) のままでは focus() の存在が型検査されず、
+// フォーカス管理の実装ミスが「Vapor 起因の差分」に見えてしまう。
+const dialogRef = ref<HTMLDivElement | null>(null)
+const openerRef = ref<HTMLButtonElement | null>(null)
 
 // フォーカス移動は必ず nextTick 後に行う。
 // setTimeout などタイミング依存の書き方をすると、観測された差分が

@@ -1,0 +1,25 @@
+{
+  // 型チェックの対象は「2系統へ配布された後」のソース。
+  //
+  // source/components/App.vue が参照する './components/*.vue' は
+  // 配布先 (apps/{lane}/src/) のレイアウトを前提にしたパスであり、
+  // source/ 配下では解決できない。したがって source/ を直接 include せず、
+  // pnpm run sync の生成物を型チェックする。
+  //
+  // 両 lane を同時に含めるのは意図的。同一ソースが classic / vapor の
+  // どちらの配置でも型エラーを出さないことを確認する。
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "noEmit": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true
+  },
+  "include": ["apps/*/src/**/*.ts", "apps/*/src/**/*.vue"]
+}

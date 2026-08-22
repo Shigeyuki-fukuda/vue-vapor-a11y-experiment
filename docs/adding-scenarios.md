@@ -6,13 +6,14 @@
 | # | 作業 | コマンド / 場所 |
 |---|---|---|
 | 1 | コンポーネントを追加 | `source/components/ModalDialog.vue` など。`source/components/App.vue` にも追加 |
-| 2 | 2系統へ配布 | `pnpm run sync` |
+| 2 | 2系統へ配布 → 型チェック | `pnpm run sync && pnpm run typecheck` |
 | 3 | 動作の目視確認 | `pnpm run dev:classic` / `pnpm run dev:vapor` を並べて開く |
 | 4 | シナリオ追加 → スナップショット取得 | `e2e/scenarios/<名前>.spec.mjs` を既存からコピーして作成 → `pnpm run check` |
 | 5 | `docs/voiceover-procedure.md` に項目追加 → 結果を記録 | `results/voiceover-log.md` |
 
-手順4の `pnpm run check` は配布・ビルド・ガード検証・スモーク・E2E・差分集計を
-通しで実行する。個別に回す場合も、**差分を読む前に必ず `pnpm run verify` を通す**。
+手順4の `pnpm run check` は配布・型チェック・ビルド・ガード検証・スモーク・E2E・
+差分集計を通しで実行する。個別に回す場合も、**差分を読む前に必ず
+`pnpm run verify` を通す**。
 Vapor モードが効いていない状態では差分ゼロが自動的に出てしまうため、
 verify を通していない「差分なし」は結果として扱えない。
 
@@ -22,7 +23,20 @@ verify を通していない「差分なし」は結果として扱えない。
 (sync の生成物であり、直接編集すると2系統の同一性が壊れる)。
 
 Vapor は Options API / Suspense を対象外とするため、
-検証コンポーネントは `<script setup>` + Composition API のみで書く。
+検証コンポーネントは `<script setup lang="ts">` + Composition API のみで書く。
+
+`lang="ts"` を落とすと生成コードが変わる (ラッパ関数の有無) ため、
+既存コンポーネントと同じ条件で比較できなくなる。詳細は
+[../README.md](../README.md) の「TypeScript 化の影響 (実測)」を参照。
+
+template ref は要素型を明示する。
+
+```ts
+const dialogRef = ref<HTMLDivElement | null>(null)
+```
+
+`ref(null)` のままでは `focus()` の存在が型検査されず、実装ミスが
+「Vapor 起因の差分」に見えてしまう。
 
 ### フォーカス管理を扱うときの注意
 

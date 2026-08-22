@@ -73,6 +73,7 @@ lanes.mjs を参照して期待値を組み立てると、lanes.mjs の設定ミ
 vue-vapor-a11y-experiment/
 ├─ package.json
 ├─ playwright.config.mjs
+├─ tsconfig.json              # 型チェックの対象は配布後の apps/*/src (理由は同ファイル内)
 ├─ source/
 │  └─ components/            # ← 唯一の編集対象。2系統に同一のものが配られる
 ├─ scripts/
@@ -118,6 +119,7 @@ pnpm run check                          # 下記を通しで実行する
 
 ```sh
 pnpm run sync            # source/ → apps/{classic,vapor}/src へ配布
+pnpm run typecheck       # vue-tsc で両 lane の配布済みソースを型チェック
 pnpm run build           # 2系統をビルド (build:classic / build:vapor も個別に可)
 pnpm run verify          # 3つのガードを検証 ★これを通さない結果は信用しない
 pnpm run smoke           # happy-dom での配線チェック
@@ -165,33 +167,76 @@ pnpm run diff            # results/diff-report.md を出力
 `defineModel` / `<Teleport>` / `<Transition>` / `<Suspense>` / `v-for` / `:is` /
 `provide` / `inject` をいずれも使っていない。
 
-### TypeScript を使っていないことの影響
+### TypeScript 化の影響 (実測)
 
-結論は変わらない。`lang="ts"` が変えるのは `<script>` ブロックの扱い
-(型注釈の除去と型ベースマクロの解決) で、aria 属性を出力する template
-コンパイラの経路とは別である。加えて上記のとおり型ベースマクロを1つも
-使っていないため、TS 化しても生成されるコードは変わらない。
+`source/components/` は `<script setup lang="ts">` で書いている。
+TS 化が結論に影響しないことは推論ではなく実測で確認した。
+
+| 観点 | 結果 |
+|---|---|
+| Vapor 判定 | 壊れない。3層すべて ✅ (HTML文字列テンプレート 7 / VNode props 0) |
+| aria 出力 | 15スナップショットすべて**1バイトも変化しない** |
+| 生成コード | lane 相応のラッパが1段増える (下記) |
+| バンドルサイズ | gzip で classic +0.05 kB / vapor +0.03 kB |
+
+`lang="ts"` を付けると `@vitejs/plugin-vue` が SFC をラッパ関数で包む。
+**このラッパは lane ごとに別のものが選ばれる。**
+
+| lane | JS のとき | TS のとき |
+|---|---|---|
+| classic | `var _sfc_main = { setup(…) }` | `defineComponent({ setup(…) })` |
+| vapor | `var _sfc_main = { setup(…), __vapor: true }` | `defineVaporComponent({ setup(…) })` |
+
+vapor 側で注目すべきは `__vapor: true` の付き方が変わる点。JS ではオブジェクト
+リテラルに直接書かれていたものが、TS では `defineVaporComponent` が実行時に
+付与する形になる。**それでも Vapor マーキングは失われていない**ことを
+`pnpm run verify` と `pnpm run smoke` が確認している。ここが失われると
+vapor コンポーネントが classic として扱われ、比較そのものが成立しなくなる。
+
+増加分はこのラッパ関数の実体。テンプレートコンパイラの出力
+(`template()` に焼き込まれた aria 属性) は TS 化前後で完全に同一だった。
+
+型ベースマクロ (`defineProps<T>()` など) は依然として1つも使っていないため、
+上表の「props / slots によるコンポーネント合成」は未検証のまま。
 ビルド設定とハーネスの `.mjs` はブラウザに読み込まれないため成果物に影響しない。
+
+#### 型チェックが実際に効いていることの確認
+
+`pnpm run typecheck` (vue-tsc) を `check` に組み込んでいる。通っていることと
+機能していることは別なので、意図的に型エラーを注入して確認した。
+
+```sh
+# dialogRef.value?.focus() を存在しないメソッドに書き換えて sync した状態
+pnpm run typecheck
+```
+
+```
+apps/classic/src/components/FocusDialog.vue(16,20): error TS2339: Property 'focusTypo' does not exist on type 'HTMLDivElement'.
+apps/vapor/src/components/FocusDialog.vue(16,20): error TS2339: Property 'focusTypo' does not exist on type 'HTMLDivElement'.
+```
+
+両 lane から出ている点が重要で、`tsconfig.json` が片方だけを拾って
+「通ったことにする」状態になっていないことを示している。
 
 ## 検証エビデンス
 
-計測日 2026-08-21 / Node v26.2.0 / pnpm 11.5.0 / vue@3.6.0-rc.3 / vite@8.2.1 /
-@vitejs/plugin-vue@6.0.8 / @playwright/test@1.62.1
+計測日 2026-08-22 / Node v26.2.0 / pnpm 11.22.0 / vue@3.6.0-rc.3 / vite@8.2.1 /
+@vitejs/plugin-vue@6.0.8 / @playwright/test@1.62.1 / typescript@5.9.3 / vue-tsc@3.3.11
 
 ### バンドルサイズ
 
-5カテゴリ分のコンポーネントを含めた状態での計測。
+5カテゴリ分のコンポーネントを含めた状態での計測 (`<script setup lang="ts">`)。
 
 | 系統 | サイズ | gzip |
 |---|---|---|
-| classic | 69.65 kB | 27.39 kB |
-| vapor | 51.12 kB | 19.64 kB |
+| classic | 69.74 kB | 27.44 kB |
+| vapor | 51.17 kB | 19.67 kB |
 
 Vapor 側は VDOM ランタイムを含まないため gzip で約 28% 小さい。
 
 > 検証項目を増やすとアプリ固有のコードが両系統に等しく積み上がるため、
 > ランタイム差の比率は相対的に縮む。1カテゴリのみだった時点では約 37% 差だった。
-> 差の絶対値 (gzip 約 7.7 kB) がランタイム由来の削減分にあたる。
+> 差の絶対値 (gzip 約 7.8 kB) がランタイム由来の削減分にあたる。
 
 ### コード生成方式が本当に切り替わっているか
 
