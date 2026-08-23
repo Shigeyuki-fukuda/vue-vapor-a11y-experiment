@@ -114,12 +114,25 @@ saveSnapshot(t.name, 'focus-management', {
 
 ## ariaSnapshot が出さない属性をスナップショットに残す
 
-`ariaSnapshot()` が出すのは role / アクセシブルネームと一部の状態
-(`selected` / `expanded` / `checked` など) だけ。`aria-posinset` や
-`aria-setsize` のような数値属性は現れない。**観測対象がスナップショットから
-抜け落ちていることに気付かないまま「差分なし」を出す**のが一番危ない。
+`ariaSnapshot()` が出すのは role / アクセシブルネームと一部の状態だけ。
+**関連付けを表す属性は出力に現れない。** 観測対象がスナップショットから
+抜け落ちていることに気付かないまま「差分なし」を出すのが一番危ない。
 
-フォーカス位置と同じ扱いで、別時点として保存する。
+| 属性 | ariaSnapshot での扱い |
+|---|---|
+| `aria-expanded` | `button "…" [expanded]` として出る |
+| `aria-invalid` | `textbox "…" [invalid]` として出る |
+| `aria-selected` | `option "…" [selected]` として出る |
+| `aria-modal` | **出ない** |
+| `aria-controls` | **出ない** |
+| `aria-describedby` | **出ない** (参照先の要素は `alert:` として出る) |
+| `aria-posinset` / `aria-setsize` | **出ない** |
+
+**新しい属性を使うシナリオを足すときは、まずこの表を見る。**
+載っていない属性は自分で確かめる。一度スナップショットを取って
+`grep -r aria-foo e2e/snapshots/` してみるのが早い。
+
+フォーカス位置と同じ扱いで、出ない属性は別時点として保存する。
 
 ```js
 import { saveSnapshot, snapshotAttributes } from '../helpers/snapshot.mjs'

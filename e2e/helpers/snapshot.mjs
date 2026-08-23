@@ -25,9 +25,12 @@ export async function snapshotAttributes(locator, attributes) {
     (elements, attrs) =>
       elements
         .map((el) => {
-          const text = (el.textContent ?? '').trim()
+          // 行の見出し。input のようにテキストを持たない要素もあるため、
+          // テキスト → id → タグ名の順にフォールバックする
+          const label =
+            (el.textContent ?? '').trim() || el.getAttribute('id') || el.tagName.toLowerCase()
           const pairs = attrs.map((attr) => `${attr}=${el.getAttribute(attr) ?? '(なし)'}`)
-          return `- ${text}: ${pairs.join(' ')}`
+          return `- ${label}: ${pairs.join(' ')}`
         })
         .join('\n'),
     attributes
