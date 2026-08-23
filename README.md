@@ -77,7 +77,7 @@ vue-vapor-a11y-experiment/
 ├─ source/
 │  └─ components/            # ← 唯一の編集対象。2系統に同一のものが配られる
 ├─ scripts/
-│  ├─ lanes.mjs               # 2系統のビルド設定 (vapor フラグ / dev ポート)
+│  ├─ lanes.mjs               # 2系統のビルド設定 (vapor フラグ / dev・preview ポート)
 │  ├─ sources.mjs             # 配布先の解決と「2系統が同一」の検証
 │  ├─ sync-sources.mjs        # source/ を2系統へ配布 (変換は一切しない)
 │  ├─ verify-vapor-mode.mjs   # 成果物と entry が意図通りかを検証
@@ -126,6 +126,20 @@ pnpm run smoke           # happy-dom での配線チェック
 pnpm run test:e2e        # ariaSnapshot 取得 (要 Playwright)
 pnpm run diff            # results/diff-report.md を出力
 ```
+
+VoiceOver 検証で使うプレビューサーバは別に立てる (`check` には含まれない)。
+
+```sh
+pnpm run preview:classic   # → localhost:4173
+pnpm run preview:vapor     # → localhost:4174
+```
+
+ビルドは含めていない。`verify` を通した成果物をそのまま配信するため。
+ポートは `scripts/lanes.mjs` の `previewPort` が単一の情報源で、`strictPort: true`
+により埋まっていれば別ポートへ逃げずに失敗する。逃げると「4173 に残った classic を
+相手に classic 同士を比較する」事故が起きるため、落とすほうを選んでいる。
+同じ理由で Playwright 側も `reuseExistingServer: false`。preview を立てたまま
+`test:e2e` を回すと失敗する (詳細は [docs/troubleshooting.md](docs/troubleshooting.md))。
 
 ## ドキュメント
 

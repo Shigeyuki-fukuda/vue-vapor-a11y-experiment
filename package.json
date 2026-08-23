@@ -9,6 +9,8 @@
     "build:classic": "vite build --config apps/classic/vite.config.mjs",
     "build:vapor": "vite build --config apps/vapor/vite.config.mjs",
     "build": "pnpm run build:classic && pnpm run build:vapor",
+    "preview:classic": "vite preview --config apps/classic/vite.config.mjs",
+    "preview:vapor": "vite preview --config apps/vapor/vite.config.mjs",
     "typecheck": "vue-tsc -p tsconfig.json",
     "verify": "node scripts/verify-vapor-mode.mjs",
     "smoke": "node scripts/smoke-test.mjs",

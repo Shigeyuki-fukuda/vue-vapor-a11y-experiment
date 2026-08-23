@@ -10,14 +10,46 @@
 
 ## 事前準備
 
-### 1. プレビューサーバの起動
+### 1. ビルドとガード検証
+
+**先に `pnpm run verify` を通す。** Vapor モードが効いていない状態で読み上げを
+比較しても、それは classic 同士を聞き比べているだけになる。ariaSnapshot と違って
+読み上げ検証は手作業なので、後から気付いても全カテゴリやり直しになる。
 
 ```sh
-pnpm run build:classic && pnpm exec vite preview --config apps/classic/vite.config.mjs --port 4173
-pnpm run build:vapor   && pnpm exec vite preview --config apps/vapor/vite.config.mjs   --port 4174
+pnpm run sync && pnpm run typecheck && pnpm run build && pnpm run verify
 ```
 
-### 2. キャプションパネルの有効化
+### 2. プレビューサーバの起動
+
+別々のターミナルで起動し、検証中は両方立てたままにする。
+
+```sh
+pnpm run preview:classic   # → localhost:4173
+pnpm run preview:vapor     # → localhost:4174
+```
+
+**ビルドは含まれていない。** 手順1で `verify` を通した成果物をそのまま配信するため。
+ここで再ビルドすると、検証した成果物と配信する成果物が別物になりうる。
+
+ポートは `scripts/lanes.mjs` の `previewPort` が単一の情報源で、`strictPort: true`
+が付いている。埋まっていれば別ポートへ逃げずに失敗する。
+
+```
+error when starting preview server:
+Error: Port 4173 is already in use
+```
+
+これは意図的な仕様。逃げてしまうと、例えば 4174 が埋まっていて vapor が 4175 で
+起動し、4173 に残った classic を相手に「classic 同士」を比較する事故が起きる。
+VoiceOver は何も言わずに読み上げるので、この事故は自力では気付けない。
+
+### 3. どちらの lane を操作しているかの確認
+
+タブのタイトルが `classic` / `vapor` になっている。カテゴリを移るたびに確認する
+(`index.html` の `<title>` を lane ごとに変えているのはこのため)。
+
+### 4. キャプションパネルの有効化
 
 読み上げ内容を画面に字幕表示させると、録画にそのまま残るので後から検証できる。
 
@@ -25,7 +57,7 @@ pnpm run build:vapor   && pnpm exec vite preview --config apps/vapor/vite.config
 2. VoiceOver ユーティリティを開く (VO + F8)
 3. 「ビジュアル」→ 「キャプションパネル」を有効化
 
-### 3. 録画の準備
+### 5. 録画の準備
 
 - QuickTime の画面収録、またはショートカット ⇧⌘5
 - **マイクを ON** にすると読み上げ音声も残る
@@ -109,6 +141,35 @@ pnpm run build:vapor   && pnpm exec vite preview --config apps/vapor/vite.config
 
 `v-if` と `v-show` で読み上げの扱いが変わらないことを確認する。
 非表示時にどちらか一方だけ読み上げられたら差分として記録する。
+
+### 6. リスト描画: キー付き v-for の再利用
+
+初期状態では1件目 (Vapor Mode) が選択済み。
+
+| # | 操作 | キー |
+|---|---|---|
+| 1 | リストへ入り、3項目を順に読ませて記録 | `VO + →` |
+| 2 | 3件目 (Hydration) へフォーカスを移動 | `Tab` ×3 |
+| 3 | 押下して選択 | `Enter` |
+| 4 | 選択直後の読み上げを記録 | (自動読み上げ) |
+| 5 | 「先頭を末尾へ」へ移動して押下 | `Tab` → `VO + Space` |
+| 6 | リストへ戻り、3項目を順に読ませて記録 | `VO + →` |
+| 7 | 「先頭を削除」へ移動して押下 | `Tab` → `VO + Space` |
+| 8 | リストへ戻り、2項目を順に読ませて記録 | `VO + →` |
+
+**このカテゴリは ariaSnapshot では観測しきれない部分がある。** 見るべきは3点。
+
+- **位置の読み上げ** — 「3項目中の1」のように位置が読まれるか。
+  `aria-posinset` / `aria-setsize` は ariaSnapshot の出力に現れないため、
+  E2E 側では属性値を別時点として保存している。読み上げに乗るかは別問題なので
+  ここで確認する
+- **並べ替え後に位置が更新されるか** — 手順6で選択中の Hydration が
+  「3項目中の2」と読まれるか。古い位置のまま読まれたら差分として記録する
+- **削除後に総数が更新されるか** — 手順8で「2項目中の1」と読まれるか
+
+並べ替えでは DOM ノードが再利用される (E2E で確認済み)。**支援技術が
+古い値をキャッシュしていると、DOM の属性は正しいのに読み上げだけ古くなる**
+可能性があり、それはこの手順でしか見つからない。
 
 ## 記録先
 

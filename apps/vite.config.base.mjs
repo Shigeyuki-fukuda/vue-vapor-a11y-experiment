@@ -19,7 +19,13 @@ export function createLaneConfig(name) {
   return defineConfig({
     root: `apps/${name}`,
     plugins: [vue({ features: { vapor: lane.vapor } })],
-    server: { port: lane.devPort },
+    // strictPort は必須。Vite は既定でポートが埋まっていると別のポートへ
+    // 逃げるが、この実験ではポート番号が lane の識別子そのものになっている。
+    // 4174 が埋まっていて vapor が 4175 で起動すると、4173 に残った classic を
+    // 相手に「classic 同士」を比較してしまう。それでも VoiceOver は何も言わずに
+    // 読み上げるため、読み上げ検証では事故に気付けない。
+    server: { port: lane.devPort, strictPort: true },
+    preview: { port: lane.previewPort, strictPort: true },
     build: { outDir: 'dist' },
   })
 }

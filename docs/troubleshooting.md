@@ -117,6 +117,43 @@ const focusOpened = await page.locator(':focus').ariaSnapshot()
 Vapor 側の実装が変わっている可能性があるため、`check` に含まれる
 `verify` の結果を必ず確認する。
 
+## `pnpm run test:e2e` が「is already used」で失敗する
+
+```
+Error: http://localhost:4173 is already used, make sure that nothing is running
+on the port/url or set reuseExistingServer:true in config.webServer.
+```
+
+**原因**: `pnpm run preview:{lane}` を立てたまま E2E を回した。
+
+**対処**: preview を止めてから実行する。**これは意図的に失敗させている。**
+`reuseExistingServer: true` にすると Playwright は既存サーバを再利用するが、
+そのサーバが古い成果物を配信していても気付けず「差分 0 件」を出してしまう。
+VoiceOver 検証で preview を立てたまま E2E を回すのは実際に起きるため、
+黙って通すより落とすほうを選んでいる。
+
+## `pnpm run preview:{lane}` が「Port is already in use」で失敗する
+
+```
+error when starting preview server:
+Error: Port 4173 is already in use
+```
+
+**原因**: そのポートに何かが立っている。
+
+**対処**: 既存のプロセスを止める。`vite.config` に `strictPort: true` を
+付けているため、Vite は空いている別ポートへ逃げずに失敗する。
+これも意図的で、逃げてしまうと 4174 が埋まっていて vapor が 4175 で起動し、
+4173 に残った classic を相手に「classic 同士」を比較する事故が起きる。
+VoiceOver は何も言わずに読み上げるので、この事故は自力では気付けない。
+
+なお `vite preview` は `[::1]` (IPv6) にバインドする。ポートを掴んでいる
+プロセスを探すときは IPv6 側も見る。
+
+```sh
+lsof -nP -iTCP:4173 -sTCP:LISTEN
+```
+
 ## `pnpm run diff` が「スナップショットがありません」で終了する
 
 **原因**: `e2e/snapshots/{classic,vapor}` がまだ生成されていない。
