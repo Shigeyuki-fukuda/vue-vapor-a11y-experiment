@@ -17,6 +17,13 @@ import { LANES } from './scripts/lanes.mjs'
  */
 export default defineConfig({
   testDir: 'e2e/scenarios',
+  /**
+   * 既定の reporter は CI で 'dot'、ローカルで 'list' (html は含まれない)。
+   * html を明示しないと playwright-report/ が生成されないため、
+   * ワークフローの失敗時 artifact が中身ゼロのまま誰にも気付かれない。
+   * ローカルの出力は今までどおり list。
+   */
+  reporter: process.env.CI ? [['html', { open: 'never' }], ['dot']] : 'list',
   webServer: Object.keys(LANES).map((lane) => ({
     command: `pnpm run build:${lane} && pnpm run preview:${lane}`,
     port: LANES[lane].previewPort,
