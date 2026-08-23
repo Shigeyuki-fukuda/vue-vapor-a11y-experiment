@@ -80,15 +80,16 @@ async function open() {
 | 動的 aria 属性 | `aria-expanded` の更新 | ✅ 完了 |
 | フォームエラー | `aria-invalid` / `aria-describedby` の紐付け | ✅ 完了 |
 | 条件付き描画 | `v-if` / `v-show` によるツリーの出入り | ✅ 完了 |
+| リスト描画 | キー付き `v-for` の並べ替え・削除で `aria-selected` / `aria-posinset` / `aria-setsize` が追随するか | ✅ 完了 |
 
 ariaSnapshot 差分はいずれも 0 件。VoiceOver での読み上げ検証は
 [../results/voiceover-log.md](../results/voiceover-log.md) が未記入のため残っている。
 
 ### 次に増やすなら
 
-`aria-selected` を伴うタブ、`aria-live="assertive"` との比較、
-リスト要素の並べ替え (キー付き `v-for` の再利用) あたりが、
-Vapor のレンダリング方式の違いが出うる未検証領域。
+`aria-live="assertive"` との比較、props / slots をまたぐ `aria-labelledby`、
+`<Teleport>` 下の `aria-modal` あたりが、Vapor のレンダリング方式の違いが
+出うる未検証領域 ([../README.md](../README.md) の「検証範囲の限界」)。
 
 ## フォーカス位置をスナップショットに残す
 
@@ -110,3 +111,47 @@ saveSnapshot(t.name, 'focus-management', {
 
 なお初期状態のようにフォーカスが `body` にある時点では `:focus` が
 どの要素にもマッチしないため、時点として記録しない。
+
+## ariaSnapshot が出さない属性をスナップショットに残す
+
+`ariaSnapshot()` が出すのは role / アクセシブルネームと一部の状態
+(`selected` / `expanded` / `checked` など) だけ。`aria-posinset` や
+`aria-setsize` のような数値属性は現れない。**観測対象がスナップショットから
+抜け落ちていることに気付かないまま「差分なし」を出す**のが一番危ない。
+
+フォーカス位置と同じ扱いで、別時点として保存する。
+
+```js
+import { saveSnapshot, snapshotAttributes } from '../helpers/snapshot.mjs'
+
+const attrs = await snapshotAttributes(page.getByRole('option'), [
+  'aria-posinset',
+  'aria-setsize',
+  'aria-selected',
+])
+
+saveSnapshot(t.name, 'list-reorder', {
+  selected,
+  'selected-attrs': attrs,   // → list-reorder.selected-attrs.yaml
+})
+```
+
+出力は要素の出現順どおり。並べ替えでは順序そのものが観測対象なのでソートしない。
+
+### そのシナリオが空振りしていないかも確認する
+
+差分ゼロは「壊れていない」だけでなく「**そもそも壊れうる経路を通っていない**」
+ときにも出る。リスト再利用の検証がその典型で、ノードが毎回作り直される実装なら
+「古い aria 属性が残る」失敗モードを通らない。
+
+初期描画直後に DOM ノードへテスト側から印を振り、操作後にその印がどこにいるかを
+時点として保存すれば、再利用が起きたことを確認できる。
+
+```js
+await options.evaluateAll((els) => {
+  els.forEach((el, index) => { el.dataset.probe = String(index) })
+})
+```
+
+`data-*` 属性はアクセシビリティツリーに現れないので ariaSnapshot 側は汚れない。
+実例は [../e2e/scenarios/list-reorder.spec.mjs](../e2e/scenarios/list-reorder.spec.mjs)。

@@ -54,8 +54,8 @@ Vite 設定側にあり、コンポーネントには一切現れない。意図
 
 | lane | HTML 文字列テンプレート (Vapor) | VNode props (VDOM) |
 |---|---|---|
-| classic | 0 | 11 |
-| vapor | 7 | 0 |
+| classic | 0 | 16 |
+| vapor | 9 | 0 |
 
 どちらの方向も見ているため、「Vapor になっていない」と「VDOM が混入した」の
 両方を検出できる。0 件はマーカー自体が陳腐化した場合にも起きるので、
@@ -147,6 +147,7 @@ pnpm run diff            # results/diff-report.md を出力
 | 動的 aria 属性 | `aria-expanded` の更新 | [dynamic-aria](e2e/scenarios/dynamic-aria.spec.mjs) | ✅ なし |
 | フォームエラー | `aria-invalid` / `aria-describedby` の紐付け | [form-error](e2e/scenarios/form-error.spec.mjs) | ✅ なし |
 | 条件付き描画 | `v-if` / `v-show` によるツリーの出入り | [conditional-render](e2e/scenarios/conditional-render.spec.mjs) | ✅ なし |
+| リスト描画 | キー付き `v-for` の並べ替え・削除で `aria-selected` / `aria-posinset` / `aria-setsize` が追随するか | [list-reorder](e2e/scenarios/list-reorder.spec.mjs) | ✅ なし |
 
 ## 検証範囲の限界
 
@@ -156,7 +157,6 @@ pnpm run diff            # results/diff-report.md を出力
 
 | 未検証の領域 | 差分が出うる理由 |
 |---|---|
-| `v-for` によるリスト描画 | Vapor のリスト差分アルゴリズムは VDOM と別実装。行を再利用する際に `aria-selected` / `aria-posinset` が古い値のまま残る余地がある |
 | props / slots によるコンポーネント合成 | 親から渡した id で `aria-labelledby` を張る構成が保たれるか |
 | `<Teleport>` | モーダルを body 直下へ移したときに `aria-modal` とフォーカストラップが機能するか |
 | `<Transition>` | アニメーション中の要素がアクセシビリティツリーに残留しないか |
@@ -164,13 +164,20 @@ pnpm run diff            # results/diff-report.md を出力
 | 動的コンポーネント (`:is`) | 差し替え時に role や関連付けが引き継がれるか |
 
 `source/components/` は現時点で `defineProps` / `defineEmits` / `withDefaults` /
-`defineModel` / `<Teleport>` / `<Transition>` / `<Suspense>` / `v-for` / `:is` /
+`defineModel` / `<Teleport>` / `<Transition>` / `<Suspense>` / `:is` /
 `provide` / `inject` をいずれも使っていない。
+
+> `v-for` はこの表から外れた。リスト描画は検証済み
+> ([list-reorder](e2e/scenarios/list-reorder.spec.mjs))。詳細は
+> 「[キー付き `v-for` の再利用](#キー付き-v-for-の再利用)」。
 
 ### TypeScript 化の影響 (実測)
 
 `source/components/` は `<script setup lang="ts">` で書いている。
 TS 化が結論に影響しないことは推論ではなく実測で確認した。
+
+下表は TS 化を入れた時点 (5カテゴリ / 15スナップショット) の実測値。
+`v-for` を追加した現在の値ではない。
 
 | 観点 | 結果 |
 |---|---|
@@ -225,18 +232,46 @@ apps/vapor/src/components/FocusDialog.vue(16,20): error TS2339: Property 'focusT
 
 ### バンドルサイズ
 
-5カテゴリ分のコンポーネントを含めた状態での計測 (`<script setup lang="ts">`)。
+6カテゴリ分のコンポーネントを含めた状態での計測 (`<script setup lang="ts">`)。
 
 | 系統 | サイズ | gzip |
 |---|---|---|
-| classic | 69.74 kB | 27.44 kB |
-| vapor | 51.17 kB | 19.67 kB |
+| classic | 71.48 kB | 28.07 kB |
+| vapor | 59.29 kB | 22.72 kB |
 
-Vapor 側は VDOM ランタイムを含まないため gzip で約 28% 小さい。
+Vapor 側は VDOM ランタイムを含まないため gzip で約 19% 小さい。
 
-> 検証項目を増やすとアプリ固有のコードが両系統に等しく積み上がるため、
-> ランタイム差の比率は相対的に縮む。1カテゴリのみだった時点では約 37% 差だった。
-> 差の絶対値 (gzip 約 7.8 kB) がランタイム由来の削減分にあたる。
+#### Vapor のサイズ優位は「使う機能」で縮む
+
+カテゴリを増やすたびに削減率が落ちている。これはアプリ固有コードが
+両系統に等しく積み上がるからだけではない。
+
+| 時点 | gzip 削減率 | gzip 差の絶対値 |
+|---|---|---|
+| 1カテゴリ | 約 37% | — |
+| 5カテゴリ | 28.3% | 7.77 kB |
+| 6カテゴリ (`v-for` 追加) | 19.1% | 5.35 kB |
+
+**差の絶対値そのものが縮んでいる**点が重要。アプリコードが等しく積み上がる
+だけなら比率は縮んでも絶対値は変わらないはずで、これは Vapor 側だけが
+余分に太ったことを意味する。`v-for` 1つを追加したときの増分は
+gzip で classic +0.63 kB に対し **vapor +3.05 kB**。
+
+原因は Vapor が `v-for` 用のランタイムを新たに引き込むため。
+minify なしの成果物を 5カテゴリ時点と diff すると、vapor 側にだけ以下が現れる。
+
+```
+createFor / ForBlock / ForFragment / insertForBlock / removeForBlock
+watch / shallowRef / traverse / onWatcherCleanup / createSelector
+```
+
+`createFor` が内部で `watch` を使うため、reactivity 側の `watch` と
+その依存 (`traverse` など) までバンドルに入る。classic 側は VDOM の汎用
+パッチ機構が最初から入っているので、リスト描画を1つ増やしても増分が小さい。
+
+> つまり「Vapor は gzip で N% 小さい」という数字は、**アプリが Vapor の
+> どの機能を使うかに依存する**。発表で数字を出すときは計測時点の
+> 機能セットを併記しないと誤解を招く。
 
 ### コード生成方式が本当に切り替わっているか
 
@@ -247,12 +282,12 @@ pnpm run verify
 ```
 
 ```
-✅ 全 lane のソースがバイト単位で同一 (6 files)
+✅ 全 lane のソースがバイト単位で同一 (7 files)
 
 | lane | 期待 vapor | 期待マウント関数 | HTML文字列テンプレート | VNode props | 判定 |
 |---|---|---|---|---|---|
-| classic | false | createApp | 0 | 11 | ✅ OK |
-| vapor | true | createVaporApp | 7 | 0 | ✅ OK |
+| classic | false | createApp | 0 | 16 | ✅ OK |
+| vapor | true | createVaporApp | 9 | 0 | ✅ OK |
 
 ✅ 両 lane が意図どおり別のコンパイル戦略でビルドされています
 ```
@@ -303,9 +338,9 @@ vapor 側は HTML 文字列テンプレート + 直接 DOM 操作 (`template()` 
 > バンドルサイズの計測値としては使えない。観察が終わったら
 > `pnpm run build` で通常ビルドに戻す。
 
-### ariaSnapshot 差分 (全5カテゴリ)
+### ariaSnapshot 差分 (全6カテゴリ)
 
-`pnpm run test:e2e && pnpm run diff` の結果、**15スナップショットすべてで
+`pnpm run test:e2e && pnpm run diff` の結果、**23スナップショットすべてで
 classic と vapor のアクセシビリティツリーが完全一致 (差分 0 件)**。
 
 ```
@@ -331,6 +366,14 @@ classic と vapor のアクセシビリティツリーが完全一致 (差分 0 
     - textbox "メールアドレス" [invalid]: not-an-email
     - alert: メールアドレスの形式が正しくありません
     - button "送信"
+  - 'region "リスト描画: キー付き v-for の再利用"':
+    - 'heading "リスト描画: キー付き v-for の再利用" [level=2]'
+    - button "先頭を末尾へ"
+    - button "先頭を削除"
+    - 'listbox "リスト描画: キー付き v-for の再利用"':
+      - option "Vapor Mode"
+      - option "Virtual DOM"
+      - option "Hydration" [selected]
 ```
 
 比較の向きは「classic の同一時点 vs vapor の同一時点」。
@@ -352,6 +395,49 @@ focus-opened:              focus-closed:
 
 ダイアログを開くとダイアログ自身へ、閉じると呼び出し元のボタンへフォーカスが
 戻る挙動が、2系統で一致していることを示す。
+
+#### キー付き v-for の再利用
+
+Vapor のリスト差分アルゴリズムは VDOM と別実装で、**行を再利用する際に
+`aria-selected` / `aria-posinset` が古い値のまま残る**余地がある。
+ここが最も差分を疑っていた領域。
+
+`ariaSnapshot()` は `option "Hydration" [selected]` のように選択状態は出すが、
+`aria-posinset` / `aria-setsize` のような数値属性は出さない。**観測対象が
+スナップショットから抜け落ちる**ため、これらはフォーカス位置と同じ扱いで
+別時点として保存している (`*-attrs`)。
+
+実測 (classic / vapor 完全一致)。3件目を選択した状態から操作している。
+
+```
+selected  → 先頭を末尾へ                → 先頭を削除
+Vapor Mode  1/3 false     Virtual DOM 1/3 false    Hydration  1/2 true
+Virtual DOM 2/3 false     Hydration   2/3 true     Vapor Mode 2/2 false
+Hydration   3/3 true      Vapor Mode  3/3 false
+                          ^ 選択が 3番目→2番目に追随    ^ setsize が 3→2 に縮む
+```
+
+##### このシナリオが空振りしていないことの確認
+
+ノードが毎回作り直される実装なら「行を再利用する際に古い属性が残る」
+失敗モードをそもそも通らず、差分ゼロが自動的に出てしまう。そこで初期描画
+直後に DOM ノードへテスト側から通し番号 (`data-probe`) を振り、並べ替え後に
+印がどこにいるかも時点として保存している。
+
+```
+initial                                        rotated
+- Vapor Mode:  posinset=1 selected=true  probe=0   - Virtual DOM: posinset=1 probe=1
+- Virtual DOM: posinset=2 selected=false probe=1   - Hydration:   posinset=2 probe=2
+- Hydration:   posinset=3 selected=false probe=2   - Vapor Mode:  posinset=3 probe=0
+                                                                              ^ 印が行と一緒に移動
+```
+
+印が行と一緒に移動しているので、**両 lane とも DOM ノードを再利用しながら
+並べ替えている**。つまり狙った失敗モードを実際に通ったうえで、
+`aria-posinset` / `aria-selected` が正しく更新されている。
+
+`data-*` 属性はアクセシビリティツリーに現れないため、ariaSnapshot 側の
+出力には影響しない。
 
 ### 2系統ソースの差分
 

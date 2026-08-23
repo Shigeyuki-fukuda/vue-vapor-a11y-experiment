@@ -21,3 +21,11 @@
   - 'region "条件付き描画: v-if と v-show"':
     - 'heading "条件付き描画: v-if と v-show" [level=2]'
     - button "補足を切り替え"
+  - 'region "リスト描画: キー付き v-for の再利用"':
+    - 'heading "リスト描画: キー付き v-for の再利用" [level=2]'
+    - button "先頭を末尾へ"
+    - button "先頭を削除"
+    - 'listbox "リスト描画: キー付き v-for の再利用"':
+      - option "Vapor Mode" [selected]
+      - option "Virtual DOM"
+      - option "Hydration"
