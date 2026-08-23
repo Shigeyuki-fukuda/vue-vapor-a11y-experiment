@@ -71,6 +71,7 @@ lanes.mjs を参照して期待値を組み立てると、lanes.mjs の設定ミ
 
 ```
 vue-vapor-a11y-experiment/
+├─ .github/workflows/check.yml # PR ごとに pnpm run check を回す
 ├─ package.json
 ├─ playwright.config.mjs
 ├─ tsconfig.json              # 型チェックの対象は配布後の apps/*/src (理由は同ファイル内)
@@ -82,7 +83,7 @@ vue-vapor-a11y-experiment/
 │  ├─ sync-sources.mjs        # source/ を2系統へ配布 (変換は一切しない)
 │  ├─ verify-vapor-mode.mjs   # 成果物と entry が意図通りかを検証
 │  ├─ smoke-test.mjs          # happy-dom での簡易動作確認
-│  └─ diff-snapshots.mjs      # classic vs vapor の差分集計
+│  └─ diff-snapshots.mjs      # classic vs vapor の差分集計 (差分ありなら非ゼロ終了)
 ├─ apps/
 │  ├─ vite.config.base.mjs    # 両系統の Vite 設定を生成するファクトリ
 │  ├─ classic/                # createApp / src 配下は生成物 (直接編集しない)
@@ -124,8 +125,12 @@ pnpm run build           # 2系統をビルド (build:classic / build:vapor も�
 pnpm run verify          # 3つのガードを検証 ★これを通さない結果は信用しない
 pnpm run smoke           # happy-dom での配線チェック
 pnpm run test:e2e        # ariaSnapshot 取得 (要 Playwright)
-pnpm run diff            # results/diff-report.md を出力
+pnpm run diff            # results/diff-report.md を出力 ★差分ありなら非ゼロ終了
 ```
+
+`diff` は 2系統を突き合わせている唯一の箇所なので、差分を見つけたら失敗させる。
+ここが 0 を返すと、`check` は「Vapor でアクセシビリティツリーが変わった」という
+**この検証が唯一検出したい事象が起きたときにこそ緑になる**。
 
 VoiceOver 検証で使うプレビューサーバは別に立てる (`check` には含まれない)。
 
@@ -140,6 +145,25 @@ pnpm run preview:vapor     # → localhost:4174
 相手に classic 同士を比較する」事故が起きるため、落とすほうを選んでいる。
 同じ理由で Playwright 側も `reuseExistingServer: false`。preview を立てたまま
 `test:e2e` を回すと失敗する (詳細は [docs/troubleshooting.md](docs/troubleshooting.md))。
+
+## CI
+
+[`.github/workflows/check.yml`](.github/workflows/check.yml) が PR と main への
+push で `pnpm run check` を回す。Node と pnpm のバージョンはローカルと同じ出典
+(`package.json` の `packageManager` / README「計測日」節) を使う。
+
+CI は `check` に加えて **スナップショットがコミット済みの内容と一致するか**も見る。
+
+|  | 検出できること |
+|---|---|
+| `pnpm run diff` | classic と vapor が食い違った |
+| `git diff -- e2e/snapshots` | **両 lane が揃って**記録時と変わった (依存更新など) |
+
+前者だけでは、2系統が一致したまま同時に変化したケースを取り逃す。
+スナップショットをコミットしてあるのはこのため。
+
+`results/` は一致判定の対象外。`diff-report.md` が実行日を埋め込むので、
+中身が同じでも別の日には必ず差分が出る。
 
 ## ドキュメント
 

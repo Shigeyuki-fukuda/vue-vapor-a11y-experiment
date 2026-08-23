@@ -1,0 +1,61 @@
+name: check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# 同じ PR に push が続いたとき、古い実行を打ち切る。
+# ブラウザのインストールを含むので 1 実行あたりの時間が長い。
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # pnpm のバージョンは package.json の packageManager を唯一の出典とする。
+      # ここに番号を書き写すと、ローカルと CI で別のバージョンが走り得る。
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # README「計測日」節に記録している実測環境と揃える
+          node-version: 26
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # playwright.config.mjs は projects を定義していないため既定の chromium のみ使う
+      - run: pnpm exec playwright install --with-deps chromium
+
+      - run: pnpm run check
+
+      # `pnpm run check` は classic / vapor を互いに突き合わせるが、
+      # 「両 lane が揃って変わった」場合は 2 系統が一致したままなので検出できない。
+      # スナップショットはコミット済みなので、再生成した結果との差を見れば
+      # 記録済みのアクセシビリティツリーからの変化として捕まえられる。
+      #
+      # results/ は見ない。diff-report.md が実行日を埋め込むため、
+      # 中身が同じでも別の日には必ず差分が出る。
+      - name: スナップショットがコミット済みの内容と一致するか
+        run: |
+          if ! git diff --exit-code -- e2e/snapshots; then
+            echo "::error::再生成したスナップショットがコミット済みの内容と一致しません。意図した変更なら e2e/snapshots/ の更新を含めてください"
+            exit 1
+          fi
+
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: check-failure-report
+          path: |
+            playwright-report/
+            results/diff-report.md
+          retention-days: 7
+          if-no-files-found: ignore

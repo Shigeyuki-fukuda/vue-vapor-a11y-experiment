@@ -21,8 +21,22 @@ md += `検証日: ${new Date().toISOString().slice(0, 10)}\n\n`
 md += '| シナリオ.時点 | 差分 |\n|---|---|\n'
 for (const r of rows) md += `| ${r.file.replace('.yaml','')} | ${r.same ? '✅ なし' : '⚠️ あり'} |\n`
 md += '\n'
-for (const r of rows.filter(r => !r.same)) {
+const differing = rows.filter(r => !r.same)
+for (const r of differing) {
   md += `## ⚠️ ${r.file}\n\n### classic\n\n\`\`\`yaml\n${r.a}\`\`\`\n\n### vapor\n\n\`\`\`yaml\n${r.b ?? '(取得なし)'}\`\`\`\n\n`
 }
 writeFileSync('results/diff-report.md', md)
-console.log(`results/diff-report.md を出力 (${rows.length}件中 差分あり ${rows.filter(r=>!r.same).length}件)`)
+console.log(`results/diff-report.md を出力 (${rows.length}件中 差分あり ${differing.length}件)`)
+
+/**
+ * 差分があれば異常終了する。
+ *
+ * lane 同士を突き合わせているのはこのスクリプトだけで、各 spec は自分の lane の
+ * スナップショットを書き出すに留まる。ここが 0 を返すと `pnpm run check` は
+ * 「Vapor でアクセシビリティツリーが変わった」という、この検証が唯一検出したい
+ * 事象が起きたときにこそ緑になってしまう。
+ */
+if (differing.length > 0) {
+  console.error(`❌ classic と vapor に ${differing.length}件の差分。内訳は results/diff-report.md`)
+  process.exit(1)
+}
