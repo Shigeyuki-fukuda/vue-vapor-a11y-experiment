@@ -1,10 +1,17 @@
 import { test, expect } from '@playwright/test'
-import { saveSnapshot } from '../helpers/snapshot.mjs'
+import { saveSnapshot, snapshotAttributes } from '../helpers/snapshot.mjs'
 
 const targets = [
   { name: 'classic', url: 'http://localhost:4173' },
   { name: 'vapor',   url: 'http://localhost:4174' },
 ]
+
+/**
+ * ariaSnapshot は開いたダイアログを `dialog "表示設定"` として出すが、
+ * **aria-modal は出力に現れない**。「モーダルであること」自体が比較対象から
+ * 抜け落ちるため、属性を別時点として保存する。
+ */
+const DIALOG_ATTRIBUTES = ['aria-modal', 'aria-labelledby', 'tabindex']
 
 for (const t of targets) {
   test(`focus management — ${t.name}`, async ({ page }) => {
@@ -21,6 +28,7 @@ for (const t of targets) {
     await expect(dialog).toBeFocused()
     const opened = await page.locator('#app').ariaSnapshot()
     const focusOpened = await page.locator(':focus').ariaSnapshot()
+    const openedAttrs = await snapshotAttributes(dialog, DIALOG_ATTRIBUTES)
 
     // ③ 閉じる → 消滅とフォーカス復帰の完了を待ってから取得
     await page.getByRole('button', { name: '閉じる' }).click()
@@ -37,6 +45,7 @@ for (const t of targets) {
       closed,
       'focus-opened': focusOpened,
       'focus-closed': focusClosed,
+      'opened-attrs': openedAttrs,
     })
   })
 }

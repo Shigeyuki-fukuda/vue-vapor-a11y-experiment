@@ -81,8 +81,13 @@
 
 ## ariaSnapshot 側の結果 (対比用)
 
-上記6カテゴリはいずれも **ariaSnapshot 差分 0 件** (23スナップショット、
+上記6カテゴリはいずれも **ariaSnapshot 差分 0 件** (29スナップショット、
 計測日 2026-08-22)。詳細は [diff-report.md](diff-report.md)。
+
+> ただし `aria-modal` / `aria-controls` / `aria-describedby` /
+> `aria-posinset` / `aria-setsize` は ariaSnapshot の出力に現れないため、
+> 属性値を別時点 (`*-attrs`) として突き合わせている。**属性が一致していても
+> 支援技術がそれを読み上げるかは別問題**で、そこを埋めるのがこの記録。
 
 ここに ✕ が出た場合、それは「アクセシビリティツリーは一致しているのに
 読み上げだけ違う」ということになる。

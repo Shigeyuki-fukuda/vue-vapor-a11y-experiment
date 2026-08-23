@@ -157,8 +157,8 @@ pnpm run preview:vapor     # → localhost:4174
 | カテゴリ | 検証内容 | シナリオ | 差分 |
 |---|---|---|---|
 | live region | `role=status` の動的更新 | [live-region](e2e/scenarios/live-region.spec.mjs) | ✅ なし |
-| フォーカス管理 | モーダル開閉時のフォーカス移動・復帰 | [focus-management](e2e/scenarios/focus-management.spec.mjs) | ✅ なし |
-| 動的 aria 属性 | `aria-expanded` の更新 | [dynamic-aria](e2e/scenarios/dynamic-aria.spec.mjs) | ✅ なし |
+| フォーカス管理 | モーダル開閉時のフォーカス移動・復帰、`aria-modal` | [focus-management](e2e/scenarios/focus-management.spec.mjs) | ✅ なし |
+| 動的 aria 属性 | `aria-expanded` の更新、`aria-controls` の関連付け | [dynamic-aria](e2e/scenarios/dynamic-aria.spec.mjs) | ✅ なし |
 | フォームエラー | `aria-invalid` / `aria-describedby` の紐付け | [form-error](e2e/scenarios/form-error.spec.mjs) | ✅ なし |
 | 条件付き描画 | `v-if` / `v-show` によるツリーの出入り | [conditional-render](e2e/scenarios/conditional-render.spec.mjs) | ✅ なし |
 | リスト描画 | キー付き `v-for` の並べ替え・削除で `aria-selected` / `aria-posinset` / `aria-setsize` が追随するか | [list-reorder](e2e/scenarios/list-reorder.spec.mjs) | ✅ なし |
@@ -354,7 +354,7 @@ vapor 側は HTML 文字列テンプレート + 直接 DOM 操作 (`template()` 
 
 ### ariaSnapshot 差分 (全6カテゴリ)
 
-`pnpm run test:e2e && pnpm run diff` の結果、**23スナップショットすべてで
+`pnpm run test:e2e && pnpm run diff` の結果、**29スナップショットすべてで
 classic と vapor のアクセシビリティツリーが完全一致 (差分 0 件)**。
 
 ```
@@ -409,6 +409,44 @@ focus-opened:              focus-closed:
 
 ダイアログを開くとダイアログ自身へ、閉じると呼び出し元のボタンへフォーカスが
 戻る挙動が、2系統で一致していることを示す。
+
+#### ariaSnapshot が出さないもの
+
+`ariaSnapshot()` が出すのは role / アクセシブルネームと一部の状態だけ。
+**関連付けを表す属性は出力に現れない。** 一番危ないのは、観測対象が
+スナップショットから抜け落ちていることに気付かないまま「差分なし」を出すこと。
+
+| 属性 | ariaSnapshot での扱い |
+|---|---|
+| `aria-expanded` | `button "…" [expanded]` として出る |
+| `aria-invalid` | `textbox "…" [invalid]` として出る |
+| `aria-selected` | `option "…" [selected]` として出る |
+| `aria-modal` | **出ない** |
+| `aria-controls` | **出ない** |
+| `aria-describedby` | **出ない** (参照先の要素は `alert:` として出る) |
+| `aria-posinset` / `aria-setsize` | **出ない** |
+
+出ないものは属性値を別時点 (`*-attrs`) として保存し、比較対象に加えている。
+`diff-snapshots.mjs` はファイル名単位で突き合わせるだけなので、
+時点を増やせばそのまま比較に載る。
+
+実測 (classic / vapor 完全一致)。
+
+```
+focus-management.opened-attrs:
+- 表示設定閉じる: aria-modal=true aria-labelledby=focus-dialog-heading tabindex=-1
+
+dynamic-aria.expanded-attrs:
+- コンパイル結果の詳細: aria-expanded=true aria-controls=disclosure-panel
+
+form-error.invalid-attrs:
+- email-field: aria-invalid=true aria-describedby=email-error
+form-error.recovered-attrs:
+- email-field: aria-invalid=false aria-describedby=(なし)
+```
+
+`aria-describedby` は `expect(...).toHaveAttribute()` でも確認している。
+あちらは期待値を固定する検証、こちらは2系統の突き合わせで、目的が違う。
 
 #### キー付き v-for の再利用
 
