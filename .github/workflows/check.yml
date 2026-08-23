@@ -1,0 +1,83 @@
+name: check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# 同じ PR に push が続いたとき、古い実行を打ち切る。
+# ブラウザのインストールを含むので 1 実行あたりの時間が長い。
+#
+# 打ち切ってよいのは PR だけ。github.ref にすると main への連続 push でも
+# 先行実行が消え、そのコミットのチェック結果が残らない。
+# main では head_ref が空になり sha で一意になるため打ち切られない。
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.sha }}
+  cancel-in-progress: true
+
+# 読み取り以外は使わない。リポジトリ既定の設定に依存させない。
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # pnpm のバージョンは package.json の packageManager を唯一の出典とする。
+      # ここに番号を書き写すと、ローカルと CI で別のバージョンが走り得る。
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          # README「計測日」節に記録した実測環境とパッチまで揃える。
+          # メジャーだけ指定すると 26.x のどれで走ったか記録と対応しなくなる。
+          node-version: 26.2.0
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # playwright.config.mjs は projects を定義していないため既定の chromium のみ使う
+      - run: pnpm exec playwright install --with-deps chromium
+
+      # results/diff-report.md はコミット済みなので、消さないと
+      # 「check が diff に到達する前に落ちた」実行の artifact に
+      # チェックアウト直後の (= 全件「差分なし」と書かれた) ファイルが乗る。
+      # 先に消しておけば「artifact にある = diff が実際に走った」が成り立つ。
+      - name: コミット済みの差分レポートを消す
+        run: rm -f results/diff-report.md
+
+      - run: pnpm run check
+
+      # `pnpm run check` は classic / vapor を互いに突き合わせるが、
+      # 「両 lane が揃って変わった」場合は 2 系統が一致したままなので検出できない。
+      # スナップショットはコミット済みなので、再生成した結果との差を見れば
+      # 記録済みのアクセシビリティツリーからの変化として捕まえられる。
+      #
+      # git diff ではなく git status を見る。git diff は追跡済みファイルの変更しか
+      # 拾わないので、シナリオを足して spec だけコミットした PR は
+      # 「ベースラインが1件も無い」まま緑になってしまう。
+      #
+      # results/ は見ない。diff-report.md が実行日を埋め込むため、
+      # 中身が同じでも別の日には必ず差分が出る。
+      - name: スナップショットがコミット済みの内容と一致するか
+        run: |
+          if [ -n "$(git status --porcelain -- e2e/snapshots)" ]; then
+            git status --porcelain -- e2e/snapshots
+            git diff -- e2e/snapshots
+            echo "::error::再生成したスナップショットがコミット済みの内容と一致しません。意図した変更なら e2e/snapshots/ の更新を含めてください"
+            exit 1
+          fi
+
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: check-failure-report
+          path: |
+            playwright-report/
+            results/diff-report.md
+          retention-days: 7
+          if-no-files-found: ignore

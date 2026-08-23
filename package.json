@@ -2,6 +2,7 @@
   "name": "vue-vapor-a11y-experiment",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@11.22.0",
   "scripts": {
     "sync": "node scripts/sync-sources.mjs",
     "dev:classic": "vite --config apps/classic/vite.config.mjs",
