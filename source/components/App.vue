@@ -9,7 +9,7 @@ import ReorderableList from './components/ReorderableList.vue'
 
 <template>
   <main>
-    <h1>Vue Vapor A11y Experiment</h1>
+    <h1>Vue Vapor A11y Experiment (CI ゲート検証用)</h1>
     <LiveRegionToast />
     <FocusDialog />
     <DisclosurePanel />
