@@ -17,13 +17,13 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # pnpm のバージョンは package.json の packageManager を唯一の出典とする。
       # ここに番号を書き写すと、ローカルと CI で別のバージョンが走り得る。
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           # README「計測日」節に記録している実測環境と揃える
           node-version: 26
@@ -51,7 +51,7 @@ jobs:
           fi
 
       - if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: check-failure-report
           path: |
