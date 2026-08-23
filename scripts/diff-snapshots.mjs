@@ -8,12 +8,33 @@ if (!existsSync(A) || !existsSync(B)) {
   process.exit(1)
 }
 
+/**
+ * 走査するのは両 lane の**和集合**。
+ *
+ * classic 側だけを列挙すると、vapor 側にしか無いファイルは比較対象にすら
+ * 入らず「29件中 差分あり 0件」と報告されて 0 で終わる。lane 同士を
+ * 突き合わせているのはこのスクリプトだけなので、片側を基準にすると
+ * その片側に無いものは誰も見ないままになる。
+ *
+ * CI のドリフト検査 (git status) も助けにならない。あれが拾うのは未追跡か
+ * 変更済みのファイルなので、孤児が一度コミットされてしまえば以後は無反応になる。
+ *
+ * .yaml で絞るのは .DS_Store のような非スナップショットを時点として
+ * 数えないため。
+ */
+const isSnapshot = (file) => file.endsWith('.yaml')
+const files = [...new Set([...readdirSync(A), ...readdirSync(B)])].filter(isSnapshot).sort()
+
+const read = (dir, file) => {
+  const path = join(dir, file)
+  return existsSync(path) ? readFileSync(path, 'utf8') : null
+}
+
 const rows = []
-for (const file of readdirSync(A).sort()) {
-  const a = readFileSync(join(A, file), 'utf8')
-  const bPath = join(B, file)
-  const b = existsSync(bPath) ? readFileSync(bPath, 'utf8') : null
-  rows.push({ file, same: b !== null && a === b, a, b })
+for (const file of files) {
+  const a = read(A, file)
+  const b = read(B, file)
+  rows.push({ file, same: a !== null && b !== null && a === b, a, b })
 }
 
 let md = '# ariaSnapshot 差分レポート (classic vs vapor)\n\n'
@@ -23,7 +44,7 @@ for (const r of rows) md += `| ${r.file.replace('.yaml','')} | ${r.same ? '✅ �
 md += '\n'
 const differing = rows.filter(r => !r.same)
 for (const r of differing) {
-  md += `## ⚠️ ${r.file}\n\n### classic\n\n\`\`\`yaml\n${r.a}\`\`\`\n\n### vapor\n\n\`\`\`yaml\n${r.b ?? '(取得なし)'}\`\`\`\n\n`
+  md += `## ⚠️ ${r.file}\n\n### classic\n\n\`\`\`yaml\n${r.a ?? '(取得なし)'}\`\`\`\n\n### vapor\n\n\`\`\`yaml\n${r.b ?? '(取得なし)'}\`\`\`\n\n`
 }
 writeFileSync('results/diff-report.md', md)
 console.log(`results/diff-report.md を出力 (${rows.length}件中 差分あり ${differing.length}件)`)
