@@ -47,7 +47,37 @@ pnpm run verify
 
 **原因**: Options API / Suspense は Vapor の対象外。
 
-**対処**: 検証コンポーネントは `<script setup>` + Composition API のみで書く。
+**対処**: 検証コンポーネントは `<script setup lang="ts">` + Composition API のみで書く。
+
+## `pnpm run typecheck` が `ERR_PACKAGE_PATH_NOT_EXPORTED` で落ちる
+
+```
+Error [ERR_PACKAGE_PATH_NOT_EXPORTED]: Package subpath './lib/tsc' is not
+defined by "exports" in .../typescript/package.json
+```
+
+**原因**: `vue-tsc@3.3.11` は `typescript/lib/tsc` を require するが、
+TypeScript 7 系はこのサブパスを `exports` から外している (実測: `typescript@7.0.2`)。
+
+**対処**: TypeScript 5 系を使う。`pnpm add -D typescript@^5.9.0`。
+`pnpm add -D typescript` はバージョン指定なしだと 7 系が入る。
+
+## `pnpm run typecheck` が通るが、本当に検査されているか怪しい
+
+**原因**: `tsconfig.json` の `include` が 1 ファイルも拾っていなくても
+vue-tsc は成功で終了する。
+
+**対処**: 対象ファイルを列挙して確認する。両 lane 分 (App.vue + components) が
+出れば正しい。
+
+```sh
+pnpm exec vue-tsc -p tsconfig.json --listFiles | grep apps/
+```
+
+型チェックは配布後の `apps/*/src` を対象にしている。`source/` を直接
+対象にしないのは、`source/components/App.vue` の `./components/*.vue` が
+配布先のレイアウトを前提にしたパスで、`source/` 配下では解決できないため。
+したがって **`pnpm run sync` を通していないと古いコードを検査する**。
 
 ## ariaSnapshot が classic / vapor で「取得タイミング」由来の差分を出す
 
