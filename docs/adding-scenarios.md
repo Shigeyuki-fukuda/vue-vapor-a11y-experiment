@@ -95,15 +95,26 @@ async function open() {
 ariaSnapshot 差分はいずれも 0 件。VoiceOver での読み上げ検証は
 [../results/voiceover-log.md](../results/voiceover-log.md) が未記入のため残っている。
 
+| SSR / hydration | サーバ描画した HTML を独立実装の hydration で引き継いでもツリーが保たれるか | ✅ 完了 |
+
 ### 次に増やすなら
 
-残る未検証領域は **SSR / hydration** のみ
-([../README.md](../README.md) の「検証範囲の限界」)。
-これはコンポーネントと spec を足すだけでは済まず、SSR ビルド経路そのものの
-追加が要るため、この定型フローの外にある。
+README「検証範囲の限界」に挙げていた領域はすべて検証済みになった。
+残るのは **VoiceOver での読み上げ記録** で、こちらは実機が要る。
 
-`aria-live="assertive"` と `polite` の読み上げ差など、
-既存カテゴリを細分化する方向であればこのフローに乗る。
+`aria-live="assertive"` と `polite` の読み上げ差など、既存カテゴリを
+細分化する方向であればこのフローに乗る。
+
+### SSR のシナリオだけは前提が違う
+
+[ssr-hydration](../e2e/scenarios/ssr-hydration.spec.mjs) は `/ssr.html` を開く。
+他のシナリオが見ている `index.html` (クライアント描画) とは別ページで、
+`pnpm run build` に SSR ビルドと prerender が含まれていないと成立しない。
+
+このシナリオを触るときは、**#app が空でないことの確認を外さない**。
+prerender が効いていないと `<div id="app"></div>` が空のまま配信され、
+hydration ではなく通常のクライアント描画を見ることになる。
+それでもテストは通り差分 0 件が出るため、空振りに気付けない。
 
 ## ボタン文言に既存の名前を含めない
 

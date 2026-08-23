@@ -1,3 +1,4 @@
+import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { getLane } from '../scripts/lanes.mjs'
@@ -26,6 +27,27 @@ export function createLaneConfig(name) {
     // 読み上げるため、読み上げ検証では事故に気付けない。
     server: { port: lane.devPort, strictPort: true },
     preview: { port: lane.previewPort, strictPort: true },
-    build: { outDir: 'dist' },
+    build: {
+      outDir: 'dist',
+      rollupOptions: {
+        /**
+         * ページを2つ持つ。
+         *
+         * - index.html — クライアントだけで描画する既存のページ
+         * - ssr.html   — サーバが描いた HTML を hydration するページ
+         *
+         * 同じ lane に並べているのは、両者の違いを「hydration の有無」だけに
+         * 保つため。別 lane に切り出すとポートと設定が増え、差分の原因を
+         * 絞り込めなくなる。
+         *
+         * なお `--ssr` を付けたビルド (build:ssr) では Vite がこの input を
+         * 使わず、CLI で渡したサーバエントリを入口にする。
+         */
+        input: {
+          index: resolve(import.meta.dirname, name, 'index.html'),
+          ssr: resolve(import.meta.dirname, name, 'ssr.html'),
+        },
+      },
+    },
   })
 }

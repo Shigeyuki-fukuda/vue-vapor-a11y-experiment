@@ -1,6 +1,25 @@
 import { Window } from 'happy-dom'
-import { readdirSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
+
+/**
+ * index.html が実際に読み込んでいるエントリを返す。
+ *
+ * 以前は dist/assets/ を列挙して最初の .js を使っていたが、ページが
+ * index.html と ssr.html の2つになった時点で、辞書順で先に来る共有チャンク
+ * (App-*.js) を掴むようになった。共有チャンクはマウント処理を含まないため
+ * 「保存ボタンが見つかりません」で落ちる。
+ *
+ * html から辿れば、チャンクの分かれ方が変わっても対象がずれない。
+ */
+function entryOf(lane) {
+  const html = readFileSync(`apps/${lane}/dist/index.html`, 'utf8')
+  const match = html.match(/<script[^>]+src="\/([^"]+\.js)"/)
+  if (!match) {
+    throw new Error(`apps/${lane}/dist/index.html から module script を特定できません`)
+  }
+  return match[1]
+}
 
 async function run(name) {
   const window = new Window({ url: 'http://localhost/' })
@@ -13,8 +32,7 @@ async function run(name) {
   }
   document.body.innerHTML = '<div id="app"></div>'
 
-  const asset = readdirSync(`apps/${name}/dist/assets`).find(f => f.endsWith('.js'))
-  await import(pathToFileURL(`apps/${name}/dist/assets/${asset}`).href)
+  await import(pathToFileURL(`apps/${name}/dist/${entryOf(name)}`).href)
 
   const before = document.querySelector('[role=status]')?.textContent ?? '(なし)'
   // 検証コンポーネントが増えても対象がずれないよう、ボタンはテキストで特定する
