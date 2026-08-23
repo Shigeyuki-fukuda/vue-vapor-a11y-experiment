@@ -495,7 +495,7 @@ pnpm install</code></pre>
       <article class="step">
         <div class="step-head">
           <span class="step-num">02</span>
-          <h3>2系統へ配布し、ソースが完全同一であることを確認する</h3>
+          <h3>2系統へ配布し、同一性と型を確認する</h3>
         </div>
         <p class="why">
           この検証の前提は「classic と vapor のコンポーネントソースはバイト単位で同一」という点にある。
@@ -507,16 +507,27 @@ pnpm install</code></pre>
         <div>
           <span class="label">コマンド</span>
           <pre><code>pnpm run sync
+pnpm run typecheck
 
 diff -r apps/classic/src/components apps/vapor/src/components</code></pre>
         </div>
         <div>
           <span class="label">期待される結果</span>
-          <div class="expect">synced -&gt; apps/classic/src (6 files)
-synced -&gt; apps/vapor/src (6 files)
-✅ 全 lane のソースがバイト単位で同一 (6 files)
+          <div class="expect">synced -&gt; apps/classic/src (7 files)
+synced -&gt; apps/vapor/src (7 files)
+✅ 全 lane のソースがバイト単位で同一 (7 files)
 
-（diff は何も出力しない）</div>
+（typecheck も diff も何も出力しない）</div>
+        </div>
+        <div class="callout">
+          <span class="label">型チェックは配布後を見ている</span>
+          <p><code>source/components/App.vue</code> が参照する <code>./components/*.vue</code> は
+          配布先のレイアウトを前提にしたパスで、<code>source/</code> 配下では解決できない。
+          そのため <code>tsconfig.json</code> の対象は <code>apps/*/src</code> になっている。
+          <strong><code>pnpm run sync</code> を通していないと古いコードを検査する</strong>ので順序が重要。
+          検査対象を確認したいときは
+          <code>pnpm exec vue-tsc -p tsconfig.json --listFiles | grep apps/</code>
+          で両 lane 分が出るかを見る（<code>include</code> が何も拾わなくても vue-tsc は成功で終わる）。</p>
         </div>
         <div class="callout">
           <span class="label">なぜ置換をやめたか</span>
@@ -544,23 +555,35 @@ synced -&gt; apps/vapor/src (6 files)
           <pre><code>pnpm run build   <span class="c"># build:classic と build:vapor をまとめて実行する</span></code></pre>
         </div>
         <div>
-          <span class="label">期待される結果（2026-08-21 計測時の参考値）</span>
+          <span class="label">期待される結果（2026-08-22 計測時の参考値 / 6カテゴリ）</span>
           <div class="lanes">
             <div class="lane lane-classic">
               <span class="lane-name">classic</span>
-              <p>69.65 kB / gzip 27.39 kB</p>
+              <p>71.48 kB / gzip 28.07 kB</p>
             </div>
             <div class="lane lane-vapor">
               <span class="lane-name">vapor</span>
-              <p>51.12 kB / gzip 19.64 kB</p>
+              <p>59.29 kB / gzip 22.72 kB</p>
             </div>
           </div>
         </div>
         <p class="why">
-          vapor 側は VDOM ランタイムを含まないぶん gzip で約 28% 小さい。
-          検証カテゴリを増やすとアプリ固有コードが両系統に等しく積み上がるため比率は縮む。
-          意味があるのは差の絶対値（gzip 約 7.7 kB）のほう。
+          vapor 側は VDOM ランタイムを含まないぶん gzip で約 19% 小さい。
         </p>
+        <div class="callout">
+          <span class="label">この数字は機能セット依存</span>
+          <p>削減率は 1カテゴリ時点で約 37%、5カテゴリで 28.3%、
+          <code>v-for</code> を加えた6カテゴリで 19.1% と落ちている。
+          <strong>差の絶対値そのものが 7.77 kB → 5.35 kB に縮んでいる</strong>点が重要で、
+          アプリコードが両系統に等しく積み上がるだけなら比率は縮んでも絶対値は変わらない。
+          つまり vapor 側だけが余分に太った。<code>v-for</code> 1つの増分は
+          gzip で classic +0.63 kB に対し <strong>vapor +3.05 kB</strong>。
+          Vapor は <code>createFor</code> / <code>ForBlock</code> を新たに引き込み、
+          それが内部で <code>watch</code> を使うため reactivity 側
+          （<code>watch</code> / <code>traverse</code> / <code>shallowRef</code>）まで入る。
+          classic は VDOM の汎用パッチ機構が最初から入っているので増分が小さい。
+          <strong>発表で「Vapor は N% 小さい」と言うときは計測時点の機能セットを併記する。</strong></p>
+        </div>
         <label class="check"><input type="checkbox"><span>両系統のビルドが成功し、サイズを記録した</span></label>
       </article>
 
@@ -582,12 +605,12 @@ synced -&gt; apps/vapor/src (6 files)
         </div>
         <div>
           <span class="label">期待される結果</span>
-          <div class="expect">✅ 全 lane のソースがバイト単位で同一 (6 files)
+          <div class="expect">✅ 全 lane のソースがバイト単位で同一 (7 files)
 
 | lane | 期待 vapor | 期待マウント関数 | HTML文字列テンプレート | VNode props | 判定 |
 |---|---|---|---|---|---|
-| classic | false | createApp | 0 | 11 | ✅ OK |
-| vapor | true | createVaporApp | 7 | 0 | ✅ OK |
+| classic | false | createApp | 0 | 16 | ✅ OK |
+| vapor | true | createVaporApp | 9 | 0 | ✅ OK |
 
 ✅ 両 lane が意図どおり別のコンパイル戦略でビルドされています</div>
         </div>
@@ -650,10 +673,18 @@ synced -&gt; apps/vapor/src (6 files)
         </div>
         <p class="why">
           Playwright が classic を <code>:4173</code>、vapor を <code>:4174</code> でプレビュー起動し
-          （ビルドも自動で走る）、5カテゴリ × 各時点のアクセシビリティツリーを
+          （ビルドも自動で走る）、6カテゴリ × 各時点のアクセシビリティツリーを
           <code>e2e/snapshots/{classic,vapor}/</code> に YAML で保存する。
           ブラウザ本体が未取得の場合は初回だけインストールが要る。
         </p>
+        <div class="callout">
+          <span class="label">preview を立てたままでは失敗する</span>
+          <p>Part B の <code>pnpm run preview:{lane}</code> を起動したまま実行すると
+          <code>Error: http://localhost:4173 is already used</code> で落ちる。
+          <strong>これは意図的。</strong>既存サーバを再利用すると、それが古い成果物を
+          配信していても Playwright は気付かず「差分 0 件」を出してしまう。
+          preview を止めてから実行する。</p>
+        </div>
         <div>
           <span class="label">コマンド</span>
           <pre><code>pnpm exec playwright install chromium   <span class="c"># 初回のみ</span>
@@ -662,14 +693,14 @@ pnpm run test:e2e</code></pre>
         <div>
           <span class="label">期待される結果</span>
           <div class="expect">全シナリオ pass。e2e/snapshots/classic と e2e/snapshots/vapor に
-それぞれ 15 個の .yaml が生成される。</div>
+それぞれ 23 個の .yaml が生成される。</div>
         </div>
         <div class="callout">
           <span class="label">タイミング由来の偽陽性に注意</span>
           <p>スナップショット取得前に状態が確定していないと、Vapor とは無関係な差分が出る。
           シナリオを足すときは必ず <code>expect(...)</code> で状態を待ってから取得する。</p>
         </div>
-        <label class="check"><input type="checkbox"><span>両系統で 15 スナップショットずつ生成された</span></label>
+        <label class="check"><input type="checkbox"><span>両系統で 23 スナップショットずつ生成された</span></label>
       </article>
 
       <!-- 07 -->
@@ -689,7 +720,7 @@ open results/diff-report.md</code></pre>
         </div>
         <div>
           <span class="label">期待される結果</span>
-          <div class="expect">results/diff-report.md を出力 (15件中 差分あり 0件)</div>
+          <div class="expect">results/diff-report.md を出力 (23件中 差分あり 0件)</div>
         </div>
         <div class="table-wrap">
           <table>
@@ -779,12 +810,32 @@ grep -oE 'createElementBlock|createVNode|openBlock|toDisplayString' \
       （開いたままのダイアログ、表示済みのエラー）が次の読み上げに混ざると、差分の原因を追えなくなる。</p>
     </div>
 
-    <h4>準備 1 — プレビューサーバを2つ起動する</h4>
-    <p class="why">別々のターミナルで起動し、検証中は両方立てたままにする。</p>
-    <pre><code>pnpm run build:classic &amp;&amp; pnpm exec vite preview --config apps/classic/vite.config.mjs --port 4173
-pnpm run build:vapor   &amp;&amp; pnpm exec vite preview --config apps/vapor/vite.config.mjs   --port 4174</code></pre>
+    <h4>準備 1 — ビルドとガード検証を先に通す</h4>
+    <p class="why">
+      Vapor モードが効いていない状態で読み上げを比べても、classic 同士を聞き比べているだけになる。
+      ariaSnapshot と違って読み上げ検証は手作業なので、<strong>後から気付いても全カテゴリやり直し</strong>になる。
+    </p>
+    <pre><code>pnpm run sync &amp;&amp; pnpm run typecheck &amp;&amp; pnpm run build &amp;&amp; pnpm run verify</code></pre>
 
-    <h4>準備 2 — VoiceOver とキャプションパネル</h4>
+    <h4>準備 2 — プレビューサーバを2つ起動する</h4>
+    <p class="why">別々のターミナルで起動し、検証中は両方立てたままにする。</p>
+    <pre><code>pnpm run preview:classic   <span class="c"># → localhost:4173</span>
+pnpm run preview:vapor     <span class="c"># → localhost:4174</span></code></pre>
+    <div class="callout">
+      <span class="label">ビルドを含めていない理由</span>
+      <p>準備1で <code>verify</code> を通した成果物をそのまま配信するため。ここで再ビルドすると、
+      検証した成果物と配信する成果物が別物になりうる。</p>
+      <p>ポートは <code>scripts/lanes.mjs</code> の <code>previewPort</code> が単一の情報源で、
+      <code>strictPort: true</code> が付いている。埋まっていれば
+      <code>Error: Port 4173 is already in use</code> で失敗し、<strong>別ポートへ逃げない</strong>。
+      逃げてしまうと 4174 が埋まっていて vapor が 4175 で起動し、4173 に残った classic を相手に
+      「classic 同士」を比較する事故が起きる。VoiceOver は何も言わずに読み上げるので、
+      この事故は自力では気付けない。</p>
+      <p>操作中の lane はタブのタイトル（<code>classic</code> / <code>vapor</code>）で確認する。
+      <code>index.html</code> の <code>&lt;title&gt;</code> を lane ごとに変えているのはこのため。</p>
+    </div>
+
+    <h4>準備 3 — VoiceOver とキャプションパネル</h4>
     <p class="why">
       読み上げ内容を画面に字幕表示させる。録画にそのまま残るので、あとから文言を突き合わせられる。
       以下の <kbd>VO</kbd> は <kbd>Control</kbd> + <kbd>Option</kbd> の同時押しを指す。
@@ -812,7 +863,7 @@ pnpm run build:vapor   &amp;&amp; pnpm exec vite preview --config apps/vapor/vit
     </ul>
 
     <p class="part-note" style="margin-top:1.75rem">
-      以下の5カテゴリを、それぞれ classic → vapor の順で同一操作する。
+      以下の6カテゴリを、それぞれ classic → vapor の順で同一操作する。
     </p>
 
     <div class="steps">
@@ -927,6 +978,45 @@ pnpm run build:vapor   &amp;&amp; pnpm exec vite preview --config apps/vapor/vit
         <label class="check"><input type="checkbox"><span>classic / vapor 両方で記録した</span></label>
       </article>
 
+      <article class="step">
+        <div class="step-head">
+          <span class="step-num">B6</span>
+          <h3>リスト描画: キー付き v-for の再利用</h3>
+        </div>
+        <p class="why">初期状態では1件目（Vapor Mode）が選択済み。</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th class="num">#</th><th>操作</th><th>キー</th></tr></thead>
+            <tbody>
+              <tr><td class="num">1</td><td>リストへ入り、3項目を順に読ませて記録する</td><td class="keys"><kbd>VO</kbd> + <kbd>→</kbd></td></tr>
+              <tr><td class="num">2</td><td>3件目（Hydration）へフォーカスを移動する</td><td class="keys"><kbd>Tab</kbd> ×3</td></tr>
+              <tr><td class="num">3</td><td>押下して選択する</td><td class="keys"><kbd>Enter</kbd></td></tr>
+              <tr><td class="num">4</td><td>選択直後の読み上げを記録する</td><td class="keys">（自動読み上げ）</td></tr>
+              <tr><td class="num">5</td><td>「先頭を末尾へ」へ移動して押下する</td><td class="keys"><kbd>Tab</kbd> → <kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
+              <tr><td class="num">6</td><td>リストへ戻り、3項目を順に読ませて記録する</td><td class="keys"><kbd>VO</kbd> + <kbd>→</kbd></td></tr>
+              <tr><td class="num">7</td><td>「先頭を削除」へ移動して押下する</td><td class="keys"><kbd>Tab</kbd> → <kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
+              <tr><td class="num">8</td><td>リストへ戻り、2項目を順に読ませて記録する</td><td class="keys"><kbd>VO</kbd> + <kbd>→</kbd></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="why"><strong>見るべき点は3つ。</strong></p>
+        <ul>
+          <li><strong>位置が読まれるか</strong> — 「3項目中の1」のように読まれるか。
+            <code>aria-posinset</code> / <code>aria-setsize</code> は ariaSnapshot の出力に現れないため、
+            E2E 側では属性値を別時点として保存している。読み上げに乗るかは別問題なのでここで確認する。</li>
+          <li><strong>並べ替え後に位置が更新されるか</strong> — 手順6で選択中の Hydration が
+            「3項目中の2」と読まれるか。古い位置のまま読まれたら差分として記録する。</li>
+          <li><strong>削除後に総数が更新されるか</strong> — 手順8で「2項目中の1」と読まれるか。</li>
+        </ul>
+        <div class="callout">
+          <span class="label">このカテゴリでしか見つからないもの</span>
+          <p>並べ替えでは DOM ノードが再利用される（E2E で <code>data-probe</code> により確認済み）。
+          <strong>支援技術が古い値をキャッシュしていると、DOM の属性は正しいのに読み上げだけ古くなる</strong>
+          可能性があり、それは機械比較では検出できない。</p>
+        </div>
+        <label class="check"><input type="checkbox"><span>classic / vapor 両方で記録した</span></label>
+      </article>
+
     </div>
 
     <h4>環境の明記は必須</h4>
@@ -971,7 +1061,22 @@ pnpm run build:vapor   &amp;&amp; pnpm exec vite preview --config apps/vapor/vit
           <tr>
             <td>Vapor 化したコンポーネントがエラーになる</td>
             <td>Options API / Suspense は Vapor の対象外</td>
-            <td><code>&lt;script setup&gt;</code> + Composition API のみで書く</td>
+            <td><code>&lt;script setup lang="ts"&gt;</code> + Composition API のみで書く</td>
+          </tr>
+          <tr>
+            <td><code>pnpm run typecheck</code> が <code>ERR_PACKAGE_PATH_NOT_EXPORTED</code> で落ちる</td>
+            <td><code>vue-tsc</code> が require する <code>typescript/lib/tsc</code> を TypeScript 7 系が <code>exports</code> から外している</td>
+            <td>TypeScript 5 系を使う（<code>pnpm add -D typescript@^5.9.0</code>）</td>
+          </tr>
+          <tr>
+            <td><code>pnpm run test:e2e</code> が <code>is already used</code> で落ちる</td>
+            <td>Part B の preview を立てたまま E2E を回した</td>
+            <td>preview を止める。古い成果物を配信するサーバを再利用しないため意図的に失敗させている</td>
+          </tr>
+          <tr>
+            <td><code>pnpm run preview:{lane}</code> が <code>Port is already in use</code> で落ちる</td>
+            <td>そのポートに何かが立っている（<code>strictPort: true</code> で別ポートへ逃げない）</td>
+            <td><code>lsof -nP -iTCP:4173 -sTCP:LISTEN</code> で特定して止める（vite は <code>[::1]</code> にバインドする）</td>
           </tr>
           <tr>
             <td>取得タイミング由来の差分が出る</td>

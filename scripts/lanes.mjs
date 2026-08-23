@@ -12,8 +12,8 @@
  * このファイルを書き換えただけで検証が黙って通ってしまう事故を防いでいる。
  */
 export const LANES = {
-  classic: { vapor: false, devPort: 5173 },
-  vapor: { vapor: true, devPort: 5174 },
+  classic: { vapor: false, devPort: 5173, previewPort: 4173 },
+  vapor: { vapor: true, devPort: 5174, previewPort: 4174 },
 }
 
 export const LANE_NAMES = Object.keys(LANES)
