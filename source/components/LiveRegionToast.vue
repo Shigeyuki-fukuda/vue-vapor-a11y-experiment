@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 const message = ref('')
 function save() {
-  message.value = '保存しました'
+  message.value = '保存しました (CI ゲート検証用)'
 }
 </script>
 
