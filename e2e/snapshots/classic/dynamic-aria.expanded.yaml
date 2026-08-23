@@ -43,4 +43,4 @@
     - button "内訳へ切り替える"
     - region "概要":
       - heading "概要" [level=3]
-      - paragraph: 6カテゴリすべてで ariaSnapshot の差分は 0 件。
+      - paragraph: アクセシビリティツリーは全カテゴリで一致している。

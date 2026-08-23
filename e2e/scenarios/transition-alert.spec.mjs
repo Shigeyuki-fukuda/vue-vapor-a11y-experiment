@@ -32,6 +32,12 @@ for (const t of targets) {
     await expect(alert).toHaveClass(/alert-leave-active/)
     const leaving = await page.locator('#app').ariaSnapshot()
 
+    // 撮影後にもう一度確かめる。撮っている間に退場が完了していたら
+    // leaving は「消えた後」の姿になり、記録として誤りになる。
+    // 黙って間違ったスナップショットを残すより、ここで落ちたほうがよい
+    // (落ちた場合は style の transition 時間を延ばす)
+    await expect(alert).toHaveClass(/alert-leave-active/)
+
     // ④ 退場完了 — 要素が DOM から消える
     await expect(alert).toHaveCount(0)
     const gone = await page.locator('#app').ariaSnapshot()

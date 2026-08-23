@@ -234,7 +234,8 @@ Vapor の問題ではなく、Transition を使う限り両方で起きる。
 
 未着手だが、**サーバ側は両 lane で同一**であることは確認済み。
 `compileTemplate` に `ssr: true` と `vapor: true` を同時に渡すと vapor フラグは
-無視され、全 7 コンポーネントで classic と**バイト単位で同一の `ssrRender`** が出る
+無視され、全 14 コンポーネントで classic と**バイト単位で同一の `ssrRender`** が出る
+(Teleport / Transition / `:is` / slot を含めても結論は変わらない)
 (`@vue/server-renderer` にも vapor 固有のコードはない)。
 
 したがって **SSR 出力の HTML を lane 間で比較しても意味がない**。
