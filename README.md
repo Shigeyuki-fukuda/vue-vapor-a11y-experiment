@@ -234,6 +234,13 @@ Vapor の問題ではなく、Transition を使う限り両方で起きる。
 
 ## SSR / hydration
 
+> ここで行っているのは **ビルド時に一度描画して HTML を焼き込むプリレンダ**であり、
+> リクエストごとにサーバが描画する SSR ではない (常駐する Node サーバは無く、
+> `vite preview` が静的配信している)。レンダラは同じ `renderToString` で、
+> **クライアント側の hydration 経路は本番の SSR と同一**。この検証で見たいのは
+> `createSSRApp` と `createVaporSSRApp` の差だけなので、リクエスト処理が挟まらない
+> ぶん結果が決定的になる。
+
 **サーバ側は両 lane で同一。** `compileTemplate` に `ssr: true` と `vapor: true` を
 同時に渡すと vapor フラグは無視され、全 14 コンポーネントで classic と
 **バイト単位で同一の `ssrRender`** が出る (Teleport / Transition / `:is` / slot を
