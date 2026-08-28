@@ -83,7 +83,7 @@ vue-vapor-a11y-experiment/
 │  ├─ sync-sources.mjs        # source/ を2系統へ配布 (変換は一切しない)
 │  ├─ verify-vapor-mode.mjs   # 成果物と entry が意図通りかを検証
 │  ├─ smoke-test.mjs          # happy-dom での簡易動作確認
-│  └─ diff-snapshots.mjs      # classic vs vapor の差分集計 (差分ありなら非ゼロ終了)
+│  └─ diff-snapshots.mjs      # classic vs vapor の差分集計 (両 lane の和集合を走査)
 ├─ apps/
 │  ├─ vite.config.base.mjs    # 両系統の Vite 設定を生成するファクトリ
 │  ├─ classic/                # createApp / src 配下は生成物 (直接編集しない)
@@ -194,6 +194,22 @@ CI で再生成されて未追跡のまま残り、**ベースラインが1件�
 | フォームエラー | `aria-invalid` / `aria-describedby` の紐付け | [form-error](e2e/scenarios/form-error.spec.mjs) | ✅ なし |
 | 条件付き描画 | `v-if` / `v-show` によるツリーの出入り | [conditional-render](e2e/scenarios/conditional-render.spec.mjs) | ✅ なし |
 | リスト描画 | キー付き `v-for` の並べ替え・削除で `aria-selected` / `aria-posinset` / `aria-setsize` が追随するか | [list-reorder](e2e/scenarios/list-reorder.spec.mjs) | ✅ なし |
+| コンポーネント合成 | props で渡した id による `aria-labelledby` / `aria-describedby` が境界を越えて保たれるか、slot の描画位置 | [composition](e2e/scenarios/composition.spec.mjs) | ✅ なし |
+| Teleport | `body` 直下へ移した後も `aria-modal` と関連付けが生きているか、template ref が移動先を指すか | [teleport-dialog](e2e/scenarios/teleport-dialog.spec.mjs) | ✅ なし |
+| Transition | 退場アニメーション中の要素がアクセシビリティツリーに残留するか | [transition-alert](e2e/scenarios/transition-alert.spec.mjs) | ✅ なし |
+| 動的コンポーネント | `:is` の差し替えで role が保たれ、古い関連付けが残らないか | [dynamic-component](e2e/scenarios/dynamic-component.spec.mjs) | ✅ なし |
+
+### Transition で分かったこと (差分ではないが記録に値する)
+
+**退場アニメーションの最中、`role=alert` はアクセシビリティツリーに残る。**
+`v-if` が false になっても要素はアニメーション完了まで DOM に留まるためで、
+[transition-alert.leaving](e2e/snapshots/classic/transition-alert.leaving.yaml)
+に `alert: 保存に失敗しました` が記録されている。
+
+これは **classic と vapor の差分ではない** (両系統とも同じ挙動)。
+Vapor の問題ではなく、Transition を使う限り両方で起きる。
+閉じた直後に読み上げが走る設計にしていると、支援技術には
+「閉じたはずの警告がまだある」と伝わりうる。
 
 ## 検証範囲の限界
 
@@ -203,19 +219,32 @@ CI で再生成されて未追跡のまま残り、**ベースラインが1件�
 
 | 未検証の領域 | 差分が出うる理由 |
 |---|---|
-| props / slots によるコンポーネント合成 | 親から渡した id で `aria-labelledby` を張る構成が保たれるか |
-| `<Teleport>` | モーダルを body 直下へ移したときに `aria-modal` とフォーカストラップが機能するか |
-| `<Transition>` | アニメーション中の要素がアクセシビリティツリーに残留しないか |
 | SSR / hydration | Vapor の hydration は独立実装。属性欠落が起きるならここ |
-| 動的コンポーネント (`:is`) | 差し替え時に role や関連付けが引き継がれるか |
 
-`source/components/` は現時点で `defineProps` / `defineEmits` / `withDefaults` /
-`defineModel` / `<Teleport>` / `<Transition>` / `<Suspense>` / `:is` /
-`provide` / `inject` をいずれも使っていない。
+`source/components/` は現時点で `defineEmits` / `withDefaults` / `defineModel` /
+`<Suspense>` / `provide` / `inject` を使っていない。
+`defineProps<T>()` / `<Teleport>` / `<Transition>` / `:is` は検証のために導入済み。
 
-> `v-for` はこの表から外れた。リスト描画は検証済み
-> ([list-reorder](e2e/scenarios/list-reorder.spec.mjs))。詳細は
-> 「[キー付き `v-for` の再利用](#キー付き-v-for-の再利用)」。
+> props / slots・`<Teleport>`・`<Transition>`・`:is` はこの表から外れた。
+> いずれも検証済みで差分なし (上の「検証カテゴリ」を参照)。
+> `v-for` も同様に検証済み ([list-reorder](e2e/scenarios/list-reorder.spec.mjs))。
+> 詳細は「[キー付き `v-for` の再利用](#キー付き-v-for-の再利用)」。
+
+### SSR / hydration について分かっていること
+
+未着手だが、**サーバ側は両 lane で同一**であることは確認済み。
+`compileTemplate` に `ssr: true` と `vapor: true` を同時に渡すと vapor フラグは
+無視され、全 14 コンポーネントで classic と**バイト単位で同一の `ssrRender`** が出る
+(Teleport / Transition / `:is` / slot を含めても結論は変わらない)
+(`@vue/server-renderer` にも vapor 固有のコードはない)。
+
+したがって **SSR 出力の HTML を lane 間で比較しても意味がない**。
+同じコンパイラが同じ関数を吐くので、差分ゼロが出ても Vapor について何も言えず、
+「Vapor が効いていないと差分ゼロが自動的に出る」のと同じ罠になる。
+
+観測点は hydration の1箇所だけ。同一の HTML を classic は VDOM hydration で、
+vapor は `createVaporSSRApp` (`@vue/runtime-vapor` の独立実装) で引き継ぐ。
+サーバ側が共通なぶん、入力 HTML の同一性は構造的に保証される。
 
 ### TypeScript 化の影響 (実測)
 
@@ -249,8 +278,9 @@ vapor コンポーネントが classic として扱われ、比較そのもの�
 増加分はこのラッパ関数の実体。テンプレートコンパイラの出力
 (`template()` に焼き込まれた aria 属性) は TS 化前後で完全に同一だった。
 
-型ベースマクロ (`defineProps<T>()` など) は依然として1つも使っていないため、
-上表の「props / slots によるコンポーネント合成」は未検証のまま。
+型ベースマクロ (`defineProps<T>()`) はこの計測の時点では未使用だったが、
+その後 [LabelledField](source/components/LabelledField.vue) などで導入し、
+コンポーネント合成として検証済み (差分なし)。
 ビルド設定とハーネスの `.mjs` はブラウザに読み込まれないため成果物に影響しない。
 
 #### 型チェックが実際に効いていることの確認
@@ -273,19 +303,20 @@ apps/vapor/src/components/FocusDialog.vue(16,20): error TS2339: Property 'focusT
 
 ## 検証エビデンス
 
-計測日 2026-08-22 / Node v26.2.0 / pnpm 11.22.0 / vue@3.6.0-rc.3 / vite@8.2.1 /
+計測日 2026-08-23 / Node v26.2.0 / pnpm 11.22.0 / vue@3.6.0-rc.3 / vite@8.2.1 /
 @vitejs/plugin-vue@6.0.8 / @playwright/test@1.62.1 / typescript@5.9.3 / vue-tsc@3.3.11
 
 ### バンドルサイズ
 
-6カテゴリ分のコンポーネントを含めた状態での計測 (`<script setup lang="ts">`)。
+10カテゴリ分のコンポーネントを含めた状態での計測 (`<script setup lang="ts">`)。
 
 | 系統 | サイズ | gzip |
 |---|---|---|
-| classic | 71.48 kB | 28.07 kB |
-| vapor | 59.29 kB | 22.72 kB |
+| classic | 86.12 kB | 33.43 kB |
+| vapor | 88.56 kB | 32.21 kB |
 
-Vapor 側は VDOM ランタイムを含まないため gzip で約 19% 小さい。
+**raw サイズでは Vapor のほうが大きい。** gzip でようやく 3.6% 小さい程度で、
+6カテゴリ時点の 19% から大きく後退した。理由は次節のとおり。
 
 #### Vapor のサイズ優位は「使う機能」で縮む
 
@@ -297,6 +328,7 @@ Vapor 側は VDOM ランタイムを含まないため gzip で約 19% 小さい
 | 1カテゴリ | 約 37% | — |
 | 5カテゴリ | 28.3% | 7.77 kB |
 | 6カテゴリ (`v-for` 追加) | 19.1% | 5.35 kB |
+| 10カテゴリ (合成 / Teleport / Transition / `:is` 追加) | **3.6%** | **1.22 kB** |
 
 **差の絶対値そのものが縮んでいる**点が重要。アプリコードが等しく積み上がる
 だけなら比率は縮んでも絶対値は変わらないはずで、これは Vapor 側だけが
@@ -315,9 +347,19 @@ watch / shallowRef / traverse / onWatcherCleanup / createSelector
 その依存 (`traverse` など) までバンドルに入る。classic 側は VDOM の汎用
 パッチ機構が最初から入っているので、リスト描画を1つ増やしても増分が小さい。
 
+同じことが Teleport / Transition / `:is` でも起きた。これらを足した
+10カテゴリ時点で、**raw サイズは遂に vapor が classic を上回った**
+(88.56 kB 対 86.12 kB)。Vapor はこの3機能それぞれに専用ランタイム
+(`VaporTeleport` / `VaporTransition` / `createDynamicComponent`) を引き込むのに対し、
+classic 側は既に積んでいる VDOM の汎用パッチ機構で賄えるためと考えられる。
+
 > つまり「Vapor は gzip で N% 小さい」という数字は、**アプリが Vapor の
 > どの機能を使うかに依存する**。発表で数字を出すときは計測時点の
 > 機能セットを併記しないと誤解を招く。
+>
+> この実験では機能を1つ増やすたびに優位が縮み、10カテゴリで raw サイズが
+> 逆転した。**「Vapor は小さい」は使う機能が限られている場合の話**で、
+> 一般化できる主張ではない。
 
 ### コード生成方式が本当に切り替わっているか
 
@@ -384,9 +426,9 @@ vapor 側は HTML 文字列テンプレート + 直接 DOM 操作 (`template()` 
 > バンドルサイズの計測値としては使えない。観察が終わったら
 > `pnpm run build` で通常ビルドに戻す。
 
-### ariaSnapshot 差分 (全6カテゴリ)
+### ariaSnapshot 差分 (全10カテゴリ)
 
-`pnpm run test:e2e && pnpm run diff` の結果、**29スナップショットすべてで
+`pnpm run test:e2e && pnpm run diff` の結果、**47スナップショットすべてで
 classic と vapor のアクセシビリティツリーが完全一致 (差分 0 件)**。
 
 ```

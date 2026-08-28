@@ -87,15 +87,44 @@ async function open() {
 | フォームエラー | `aria-invalid` / `aria-describedby` の紐付け | ✅ 完了 |
 | 条件付き描画 | `v-if` / `v-show` によるツリーの出入り | ✅ 完了 |
 | リスト描画 | キー付き `v-for` の並べ替え・削除で `aria-selected` / `aria-posinset` / `aria-setsize` が追随するか | ✅ 完了 |
+| コンポーネント合成 | props で渡した id による関連付けが境界を越えて保たれるか、slot の描画位置 | ✅ 完了 |
+| Teleport | `body` 直下へ移した後の `aria-modal` と template ref | ✅ 完了 |
+| Transition | 退場アニメーション中の要素がツリーに残留するか | ✅ 完了 |
+| 動的コンポーネント | `:is` の差し替えで role が保たれ、古い関連付けが残らないか | ✅ 完了 |
 
 ariaSnapshot 差分はいずれも 0 件。VoiceOver での読み上げ検証は
 [../results/voiceover-log.md](../results/voiceover-log.md) が未記入のため残っている。
 
 ### 次に増やすなら
 
-`aria-live="assertive"` との比較、props / slots をまたぐ `aria-labelledby`、
-`<Teleport>` 下の `aria-modal` あたりが、Vapor のレンダリング方式の違いが
-出うる未検証領域 ([../README.md](../README.md) の「検証範囲の限界」)。
+残る未検証領域は **SSR / hydration** のみ
+([../README.md](../README.md) の「検証範囲の限界」)。
+これはコンポーネントと spec を足すだけでは済まず、SSR ビルド経路そのものの
+追加が要るため、この定型フローの外にある。
+
+`aria-live="assertive"` と `polite` の読み上げ差など、
+既存カテゴリを細分化する方向であればこのフローに乗る。
+
+## ボタン文言に既存の名前を含めない
+
+Playwright の `getByRole` の `name` は**部分一致**で照合する。
+新しいボタンに既存ボタンの名前が丸ごと含まれると、既存 spec のロケータが
+両方に当たって strict mode violation で落ちる。
+
+```
+既存: 設定を開く
+追加: 通知設定を開く   ← 「設定を開く」を含むので既存 spec が壊れる
+```
+
+実際にこれで `focus-management` が落ちた。追加時は既存の文言一覧と
+突き合わせて、包含関係が生まれないことを確かめる。
+
+```sh
+grep -hoE '>[^<>]*</button>' source/components/*.vue
+```
+
+同じ文言が複数あっても、**同時に DOM へ出ない**なら衝突しない
+(`閉じる` は2つのダイアログが持つが、片方ずつしか開かない)。
 
 ## フォーカス位置をスナップショットに残す
 

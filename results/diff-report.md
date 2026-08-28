@@ -4,6 +4,8 @@
 
 | シナリオ.時点 | 差分 |
 |---|---|
+| composition.composed-attrs | ✅ なし |
+| composition.composed | ✅ なし |
 | conditional-render.hidden-again | ✅ なし |
 | conditional-render.hidden | ✅ なし |
 | conditional-render.shown | ✅ なし |
@@ -11,6 +13,12 @@
 | dynamic-aria.collapsed | ✅ なし |
 | dynamic-aria.expanded-attrs | ✅ なし |
 | dynamic-aria.expanded | ✅ なし |
+| dynamic-component.back-attrs | ✅ なし |
+| dynamic-component.back | ✅ なし |
+| dynamic-component.detail-attrs | ✅ なし |
+| dynamic-component.detail | ✅ なし |
+| dynamic-component.summary-attrs | ✅ なし |
+| dynamic-component.summary | ✅ なし |
 | focus-management.closed | ✅ なし |
 | focus-management.focus-closed | ✅ なし |
 | focus-management.focus-opened | ✅ なし |
@@ -33,4 +41,14 @@
 | list-reorder.selected | ✅ なし |
 | live-region.after | ✅ なし |
 | live-region.before | ✅ なし |
+| teleport-dialog.closed | ✅ なし |
+| teleport-dialog.focus-closed | ✅ なし |
+| teleport-dialog.focus-opened | ✅ なし |
+| teleport-dialog.opened-app | ✅ なし |
+| teleport-dialog.opened-attrs | ✅ なし |
+| teleport-dialog.opened | ✅ なし |
+| transition-alert.gone | ✅ なし |
+| transition-alert.initial | ✅ なし |
+| transition-alert.leaving | ✅ なし |
+| transition-alert.shown | ✅ なし |
 

@@ -27,3 +27,20 @@
       - option "Vapor Mode" [selected]
       - option "Virtual DOM"
       - option "Hydration"
+  - region "props / slots によるコンポーネント合成":
+    - heading "props / slots によるコンポーネント合成" [level=2]
+    - text: 表示名
+    - textbox "表示名"
+    - paragraph: 全角32文字まで
+  - 'region "Teleport: body 直下へ移すダイアログ"':
+    - 'heading "Teleport: body 直下へ移すダイアログ" [level=2]'
+    - button "通知パネルを開く"
+  - 'region "Transition: 退場アニメーション中のツリー"':
+    - 'heading "Transition: 退場アニメーション中のツリー" [level=2]'
+    - button "警告を出す"
+  - 'region "動的コンポーネント: :is による差し替え"':
+    - 'heading "動的コンポーネント: :is による差し替え" [level=2]'
+    - button "内訳へ切り替える"
+    - region "概要":
+      - heading "概要" [level=3]
+      - paragraph: アクセシビリティツリーは全カテゴリで一致している。

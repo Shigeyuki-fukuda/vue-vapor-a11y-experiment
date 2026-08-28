@@ -5,6 +5,10 @@ import DisclosurePanel from './components/DisclosurePanel.vue'
 import ValidatedForm from './components/ValidatedForm.vue'
 import ConditionalBlocks from './components/ConditionalBlocks.vue'
 import ReorderableList from './components/ReorderableList.vue'
+import ComposedField from './components/ComposedField.vue'
+import TeleportDialog from './components/TeleportDialog.vue'
+import TransitionAlert from './components/TransitionAlert.vue'
+import DynamicPanel from './components/DynamicPanel.vue'
 </script>
 
 <template>
@@ -16,5 +20,9 @@ import ReorderableList from './components/ReorderableList.vue'
     <ValidatedForm />
     <ConditionalBlocks />
     <ReorderableList />
+    <ComposedField />
+    <TeleportDialog />
+    <TransitionAlert />
+    <DynamicPanel />
   </main>
 </template>
