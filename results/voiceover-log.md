@@ -123,13 +123,28 @@
 > 確認済み。戻した後も「内訳」と読まれるなら、原因は
 > **支援技術側のキャッシュ**であって DOM ではない。
 
+## 11. SSR / hydration
+
+**この項目だけ `/ssr.html` を開く** (他は `index.html`)。
+
+| 項目 | 操作 | classic の読み上げ全文 | vapor の読み上げ全文 | 一致 |
+|---|---|---|---|---|
+| hydration 直後 | `/ssr.html` を開いて `VO + →` で読ませる | (未記入) | (未記入) | - |
+| 補足の表示 | 「補足を切り替え」押下後 | (未記入) | (未記入) | - |
+| 補足の非表示 | 再度押下後 | (未記入) | (未記入) | - |
+
+> サーバが描いた HTML は両 lane でバイト単位で同一。それを classic は
+> `createSSRApp`、vapor は `createVaporSSRApp` という別実装で引き継ぐため、
+> ここでの差は hydration 実装の差以外にありえない。
+> E2E では hydration 前後でツリーが変化しないことを確認済み。
+
 ## 所見
 
 (未記入)
 
 ## ariaSnapshot 側の結果 (対比用)
 
-上記10カテゴリはいずれも **ariaSnapshot 差分 0 件** (47スナップショット、
+上記11カテゴリはいずれも **ariaSnapshot 差分 0 件** (50スナップショット、
 計測日 2026-08-23)。詳細は [diff-report.md](diff-report.md)。
 
 > ただし `aria-modal` / `aria-controls` / `aria-describedby` /
