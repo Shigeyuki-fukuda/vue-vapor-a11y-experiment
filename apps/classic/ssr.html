@@ -1,0 +1,8 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head><meta charset="UTF-8"><title>classic (SSR)</title></head>
+  <!-- ssr-outlet は scripts/prerender.mjs がビルド後に置換する。
+       置換されないまま preview されると #app が空になり、hydration ではなく
+       通常のクライアント描画になってしまうため、prerender 側で検査している。 -->
+  <body><div id="app"><!--ssr-outlet--></div><script type="module" src="/src/main-ssr.js"></script></body>
+</html>

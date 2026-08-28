@@ -41,6 +41,9 @@
 | list-reorder.selected | ✅ なし |
 | live-region.after | ✅ なし |
 | live-region.before | ✅ なし |
+| ssr-hydration.hydrated | ✅ なし |
+| ssr-hydration.server | ✅ なし |
+| ssr-hydration.warnings | ✅ なし |
 | teleport-dialog.closed | ✅ なし |
 | teleport-dialog.focus-closed | ✅ なし |
 | teleport-dialog.focus-opened | ✅ なし |

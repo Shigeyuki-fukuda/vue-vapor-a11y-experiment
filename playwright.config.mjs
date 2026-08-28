@@ -25,7 +25,16 @@ export default defineConfig({
    */
   reporter: process.env.CI ? [['html', { open: 'never' }], ['dot']] : 'list',
   webServer: Object.keys(LANES).map((lane) => ({
-    command: `pnpm run build:${lane} && pnpm run preview:${lane}`,
+    // ssr.html を配信するには SSR ビルドと prerender まで通す必要がある。
+    // prerender を飛ばすと #app が空のまま配信され、hydration ではなく
+    // 通常のクライアント描画を見ることになる (それでも E2E は通ってしまう)。
+    //
+    // prerender に lane を渡すのは、2つの webServer が並行して立ち上がり、
+    // 相手の dist-server がまだ無い状態で読みにいくのを避けるため。
+    // lane 間の HTML 一致は `pnpm run build` 側で確認している。
+    command:
+      `pnpm run build:${lane} && pnpm run build:ssr:${lane} && ` +
+      `pnpm run prerender ${lane} && pnpm run preview:${lane}`,
     port: LANES[lane].previewPort,
     reuseExistingServer: false,
   })),

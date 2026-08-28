@@ -83,7 +83,8 @@ vue-vapor-a11y-experiment/
 │  ├─ sync-sources.mjs        # source/ を2系統へ配布 (変換は一切しない)
 │  ├─ verify-vapor-mode.mjs   # 成果物と entry が意図通りかを検証
 │  ├─ smoke-test.mjs          # happy-dom での簡易動作確認
-│  └─ diff-snapshots.mjs      # classic vs vapor の差分集計 (両 lane の和集合を走査)
+│  ├─ diff-snapshots.mjs      # classic vs vapor の差分集計 (両 lane の和集合を走査)
+│  └─ prerender.mjs           # SSR 描画を ssr.html へ注入 (lane 間の一致も確認)
 ├─ apps/
 │  ├─ vite.config.base.mjs    # 両系統の Vite 設定を生成するファクトリ
 │  ├─ classic/                # createApp / src 配下は生成物 (直接編集しない)
@@ -198,6 +199,7 @@ CI で再生成されて未追跡のまま残り、**ベースラインが1件�
 | Teleport | `body` 直下へ移した後も `aria-modal` と関連付けが生きているか、template ref が移動先を指すか | [teleport-dialog](e2e/scenarios/teleport-dialog.spec.mjs) | ✅ なし |
 | Transition | 退場アニメーション中の要素がアクセシビリティツリーに残留するか | [transition-alert](e2e/scenarios/transition-alert.spec.mjs) | ✅ なし |
 | 動的コンポーネント | `:is` の差し替えで role が保たれ、古い関連付けが残らないか | [dynamic-component](e2e/scenarios/dynamic-component.spec.mjs) | ✅ なし |
+| SSR / hydration | サーバが描いた同一の HTML を、独立実装の hydration で引き継いでもツリーが保たれるか | [ssr-hydration](e2e/scenarios/ssr-hydration.spec.mjs) | ✅ なし |
 
 ### Transition で分かったこと (差分ではないが記録に値する)
 
@@ -213,38 +215,94 @@ Vapor の問題ではなく、Transition を使う限り両方で起きる。
 
 ## 検証範囲の限界
 
-この検証が扱っているのは **単一コンポーネント内の静的/動的 aria 属性**であり、
-以下は未検証。「Vapor Mode でアクセシビリティは壊れない」と述べる際は
-この範囲を明示する必要がある。
-
-| 未検証の領域 | 差分が出うる理由 |
-|---|---|
-| SSR / hydration | Vapor の hydration は独立実装。属性欠落が起きるならここ |
+この検証が扱っているのは **単一コンポーネント内の静的/動的 aria 属性**と、
+コンポーネントをまたぐ関連付け・描画方式の違い。
 
 `source/components/` は現時点で `defineEmits` / `withDefaults` / `defineModel` /
 `<Suspense>` / `provide` / `inject` を使っていない。
 `defineProps<T>()` / `<Teleport>` / `<Transition>` / `:is` は検証のために導入済み。
 
-> props / slots・`<Teleport>`・`<Transition>`・`:is` はこの表から外れた。
+> props / slots・`<Teleport>`・`<Transition>`・`:is`・SSR / hydration は
 > いずれも検証済みで差分なし (上の「検証カテゴリ」を参照)。
-> `v-for` も同様に検証済み ([list-reorder](e2e/scenarios/list-reorder.spec.mjs))。
+> `v-for` も同様 ([list-reorder](e2e/scenarios/list-reorder.spec.mjs))。
 > 詳細は「[キー付き `v-for` の再利用](#キー付き-v-for-の再利用)」。
 
-### SSR / hydration について分かっていること
+**それでも「Vapor Mode でアクセシビリティは壊れない」と言い切るには足りない。**
+確認できたのは ariaSnapshot が表現する範囲での一致であって、
+[VoiceOver での読み上げ](results/voiceover-log.md)は未記入のまま。
+機械比較で一致していても支援技術での体験が同じとは限らない。
 
-未着手だが、**サーバ側は両 lane で同一**であることは確認済み。
-`compileTemplate` に `ssr: true` と `vapor: true` を同時に渡すと vapor フラグは
-無視され、全 14 コンポーネントで classic と**バイト単位で同一の `ssrRender`** が出る
-(Teleport / Transition / `:is` / slot を含めても結論は変わらない)
-(`@vue/server-renderer` にも vapor 固有のコードはない)。
+## SSR / hydration
 
-したがって **SSR 出力の HTML を lane 間で比較しても意味がない**。
-同じコンパイラが同じ関数を吐くので、差分ゼロが出ても Vapor について何も言えず、
+> ここで行っているのは **ビルド時に一度描画して HTML を焼き込むプリレンダ**であり、
+> リクエストごとにサーバが描画する SSR ではない (常駐する Node サーバは無く、
+> `vite preview` が静的配信している)。レンダラは同じ `renderToString` で、
+> **クライアント側の hydration 経路は本番の SSR と同一**。この検証で見たいのは
+> `createSSRApp` と `createVaporSSRApp` の差だけなので、リクエスト処理が挟まらない
+> ぶん結果が決定的になる。
+
+**サーバ側は両 lane で同一。** `compileTemplate` に `ssr: true` と `vapor: true` を
+同時に渡すと vapor フラグは無視され、全 14 コンポーネントで classic と
+**バイト単位で同一の `ssrRender`** が出る (Teleport / Transition / `:is` / slot を
+含めても変わらない)。`@vue/server-renderer` にも vapor 固有のコードはない。
+
+そのため **SSR 出力の HTML を lane 間で比較しても意味がない**。同じコンパイラが
+同じ関数を吐くので、差分ゼロが出ても Vapor について何も言えず、
 「Vapor が効いていないと差分ゼロが自動的に出る」のと同じ罠になる。
 
-観測点は hydration の1箇所だけ。同一の HTML を classic は VDOM hydration で、
+**観測点は hydration の1箇所だけ。** 同一の HTML を、classic は VDOM hydration で、
 vapor は `createVaporSSRApp` (`@vue/runtime-vapor` の独立実装) で引き継ぐ。
-サーバ側が共通なぶん、入力 HTML の同一性は構造的に保証される。
+
+### 構成
+
+| 役割 | 実体 |
+|---|---|
+| サーバ描画 | [`apps/{lane}/src/entry-server.js`](apps/classic/src/entry-server.js) — **両 lane で同一内容**。`createSSRApp` + `renderToString` |
+| 描画結果の注入 | [`scripts/prerender.mjs`](scripts/prerender.mjs) — `ssr.html` の `<!--ssr-outlet-->` を置換 |
+| hydration | `apps/classic/src/main-ssr.js` は `createSSRApp`、[`apps/vapor/src/main-ssr.js`](apps/vapor/src/main-ssr.js) は `createVaporSSRApp` |
+| 観測 | [ssr-hydration](e2e/scenarios/ssr-hydration.spec.mjs) — `/ssr.html` を開く |
+
+`prerender` は**毎回両 lane を描画してハッシュを突き合わせる**。
+「同一のはず」を前提に書き込まず、将来の Vue で変わればその場で落ちる。
+
+```
+| lane | HTML の長さ | sha256 (先頭12) |
+|---|---|---|
+| classic | 2630 | f25b4515ae73 |
+| vapor   | 2630 | f25b4515ae73 |
+✅ サーバ描画の HTML は全 lane で同一 (hydration 前の入力が揃っている)
+```
+
+hydration 前の状態は **JavaScript を切ったコンテキスト**で撮る。
+「hydration が終わる前に急いで撮る」方式にすると記録が実行速度に左右されるため。
+
+### 結果
+
+**hydration 後のアクセシビリティツリーは両 lane で完全一致。**
+さらに各 lane 内でも hydration の前後でツリーは変化しなかった
+(`ssr-hydration.server.yaml` と `ssr-hydration.hydrated.yaml` が同一)。
+
+### v-model による hydration mismatch (両 lane 共通)
+
+**`Hydration completed but contains mismatches.` が両系統で出る。**
+
+原因は Vapor ではない。`ValidatedForm` の `v-model="email"` (初期値 `''`) に対し、
+サーバは `value=""` を属性として出力するが、クライアントの `v-model` は
+DOM プロパティを設定するため属性が付かない。
+
+```
+server: <input id="email-field" value="" type="text" aria-invalid="false">
+client: <input id="email-field" type="text" aria-invalid="false">
+```
+
+**classic と vapor で完全に同じ**なので lane 間の差分ではなく、
+アクセシビリティツリーにも影響していない (差分 0 件)。
+
+警告は 0 件を要求せず、**時点として保存して lane 間で突き合わせている**
+(`ssr-hydration.warnings.yaml`)。見たいのは「警告が無いこと」ではなく
+「lane 間で同じかどうか」で、vapor だけ警告が増えれば差分として落ちる。
+新種の警告が両 lane に出た場合も、コミット済みの内容と変わるため
+CI のドリフト検査が捕まえる。
 
 ### TypeScript 化の影響 (実測)
 
@@ -308,7 +366,7 @@ apps/vapor/src/components/FocusDialog.vue(16,20): error TS2339: Property 'focusT
 
 ### バンドルサイズ
 
-10カテゴリ分のコンポーネントを含めた状態での計測 (`<script setup lang="ts">`)。
+11カテゴリ分のコンポーネントを含めた状態での計測 (`<script setup lang="ts">`)。
 
 | 系統 | サイズ | gzip |
 |---|---|---|
@@ -426,9 +484,9 @@ vapor 側は HTML 文字列テンプレート + 直接 DOM 操作 (`template()` 
 > バンドルサイズの計測値としては使えない。観察が終わったら
 > `pnpm run build` で通常ビルドに戻す。
 
-### ariaSnapshot 差分 (全10カテゴリ)
+### ariaSnapshot 差分 (全11カテゴリ)
 
-`pnpm run test:e2e && pnpm run diff` の結果、**47スナップショットすべてで
+`pnpm run test:e2e && pnpm run diff` の結果、**50スナップショットすべてで
 classic と vapor のアクセシビリティツリーが完全一致 (差分 0 件)**。
 
 ```

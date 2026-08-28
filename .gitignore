@@ -9,3 +9,6 @@ apps/*/src/components/
 # Playwright
 test-results/
 playwright-report/
+
+# SSR ビルドの成果物 (prerender が読む中間物)
+apps/*/dist-server/
