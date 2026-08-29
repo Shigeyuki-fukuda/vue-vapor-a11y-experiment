@@ -20,6 +20,10 @@
 pnpm run sync && pnpm run typecheck && pnpm run build && pnpm run verify
 ```
 
+`pnpm run build` はクライアント用のビルドに続けて SSR ビルドとプリレンダ
+(`build:ssr` → `prerender`) まで走らせる。項目11 が開く `/ssr.html` は
+ここで生成されるので、**このコマンドを省略すると項目11 だけ 404 になる**。
+
 ### 2. プレビューサーバの起動
 
 別々のターミナルで起動し、検証中は両方立てたままにする。
@@ -231,6 +235,41 @@ DOM 上の位置が変わっても読み上げ順序や境界の扱いが同じ�
 手順4で「内訳」と読まれたら、古い名前が残っている。
 E2E では属性値が正しく入れ替わることを確認済みなので、
 そこで差が出れば**支援技術側のキャッシュ**が原因になる。
+
+### 11. SSR / hydration
+
+**この項目だけ URL が違う。** 他の10項目は `index.html` (クライアント描画) だが、
+ここは `/ssr.html` を開く。
+
+```
+classic → http://localhost:4173/ssr.html
+vapor   → http://localhost:4174/ssr.html
+```
+
+サーバが描いた HTML は両 lane でバイト単位で同一 (`scripts/prerender.mjs` が
+毎回ハッシュを突き合わせる)。それを classic は `createSSRApp`、vapor は
+`createVaporSSRApp` という**別実装**で引き継ぐ。したがってここで読み上げに
+差が出れば、原因は hydration 実装の差以外にありえない。
+
+| # | 操作 | キー |
+|---|---|---|
+| 1 | `/ssr.html` を開き、`main` を頭から3項目ぶん読ませて記録 | `VO + →` |
+| 2 | 「補足を切り替え」へフォーカスを移動して押下 | `Tab` → `VO + Space` |
+| 3 | 差し込まれた補足の読み上げを記録 | `VO + →` |
+| 4 | 再度押下して閉じ、補足が読まれなくなることを記録 | `VO + Space` → `VO + →` |
+
+**手順1が本題。** hydration はサーバが描いた既存の DOM を後から乗っ取るため、
+支援技術が乗っ取り前のツリーを掴んだままだと、画面の内容と読み上げが食い違う。
+`index.html` (項目1〜10) はクライアントが最初から描くのでこの経路を通らない。
+
+手順2以降は hydration が実際に繋がったことの確認。サーバの HTML には
+イベントが載っていないので、押して反応があればクライアント側が接続済みと判断できる。
+無反応なら hydration そのものが失敗しており、手順1の記録も無効になる。
+
+> E2E では hydration の前後でツリーが変化しないことを確認済み
+> (`ssr-hydration.server.yaml` と `ssr-hydration.hydrated.yaml` が同一)。
+> `v-model` 由来の hydration mismatch 警告が両 lane で等しく出るが、
+> これは Vapor 起因ではない (README「SSR / hydration」)。
 
 ## 記録先
 

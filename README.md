@@ -361,20 +361,23 @@ apps/vapor/src/components/FocusDialog.vue(16,20): error TS2339: Property 'focusT
 
 ## 検証エビデンス
 
-計測日 2026-08-23 / Node v26.2.0 / pnpm 11.22.0 / vue@3.6.0-rc.3 / vite@8.2.1 /
+計測日 2026-08-28 / Node v26.2.0 / pnpm 11.22.0 / vue@3.6.0-rc.3 / vite@8.2.1 /
 @vitejs/plugin-vue@6.0.8 / @playwright/test@1.62.1 / typescript@5.9.3 / vue-tsc@3.3.11
 
 ### バンドルサイズ
 
 11カテゴリ分のコンポーネントを含めた状態での計測 (`<script setup lang="ts">`)。
+`ssr.html` 用の entry (`main-ssr.js`) が同じ App チャンクを共有するため、
+**この値には hydration 経路のコードが両 lane とも入っている**。
 
 | 系統 | サイズ | gzip |
 |---|---|---|
-| classic | 86.12 kB | 33.43 kB |
-| vapor | 88.56 kB | 32.21 kB |
+| classic | 91.74 kB | 35.65 kB |
+| vapor | 101.15 kB | 36.48 kB |
 
-**raw サイズでは Vapor のほうが大きい。** gzip でようやく 3.6% 小さい程度で、
-6カテゴリ時点の 19% から大きく後退した。理由は次節のとおり。
+**raw でも gzip でも Vapor のほうが大きい。** 6カテゴリ時点では gzip で 19% 小さく、
+10カテゴリでも 3.6% は小さかったが、SSR / hydration を足した時点で
+**gzip でも 2.3% 逆転した**。理由は次節のとおり。
 
 #### Vapor のサイズ優位は「使う機能」で縮む
 
@@ -386,11 +389,12 @@ apps/vapor/src/components/FocusDialog.vue(16,20): error TS2339: Property 'focusT
 | 1カテゴリ | 約 37% | — |
 | 5カテゴリ | 28.3% | 7.77 kB |
 | 6カテゴリ (`v-for` 追加) | 19.1% | 5.35 kB |
-| 10カテゴリ (合成 / Teleport / Transition / `:is` 追加) | **3.6%** | **1.22 kB** |
+| 10カテゴリ (合成 / Teleport / Transition / `:is` 追加) | 3.6% | 1.22 kB |
+| 11カテゴリ (SSR / hydration 追加) | **-2.3%** | **-0.83 kB (逆転)** |
 
-**差の絶対値そのものが縮んでいる**点が重要。アプリコードが等しく積み上がる
-だけなら比率は縮んでも絶対値は変わらないはずで、これは Vapor 側だけが
-余分に太ったことを意味する。`v-for` 1つを追加したときの増分は
+**差の絶対値そのものが縮み、最後は符号まで反転している**点が重要。
+アプリコードが等しく積み上がるだけなら比率は縮んでも絶対値は変わらないはずで、
+これは Vapor 側だけが余分に太ったことを意味する。`v-for` 1つを追加したときの増分は
 gzip で classic +0.63 kB に対し **vapor +3.05 kB**。
 
 原因は Vapor が `v-for` 用のランタイムを新たに引き込むため。
@@ -411,12 +415,18 @@ watch / shallowRef / traverse / onWatcherCleanup / createSelector
 (`VaporTeleport` / `VaporTransition` / `createDynamicComponent`) を引き込むのに対し、
 classic 側は既に積んでいる VDOM の汎用パッチ機構で賄えるためと考えられる。
 
+**hydration を足した11カテゴリ時点で gzip も逆転した。** 10カテゴリからの増分は
+classic +5.62 kB / gzip +2.22 kB に対し、**vapor +12.59 kB / gzip +4.27 kB**。
+`createVaporSSRApp` は VDOM の hydration とは別実装なので、
+ここでも Vapor 側だけが専用の経路を丸ごと積むことになる。
+
 > つまり「Vapor は gzip で N% 小さい」という数字は、**アプリが Vapor の
 > どの機能を使うかに依存する**。発表で数字を出すときは計測時点の
 > 機能セットを併記しないと誤解を招く。
 >
-> この実験では機能を1つ増やすたびに優位が縮み、10カテゴリで raw サイズが
-> 逆転した。**「Vapor は小さい」は使う機能が限られている場合の話**で、
+> この実験では機能を1つ増やすたびに優位が縮み、10カテゴリで raw サイズが、
+> 11カテゴリ (SSR / hydration) で gzip も逆転した。
+> **「Vapor は小さい」は使う機能が限られている場合の話**で、
 > 一般化できる主張ではない。
 
 ### コード生成方式が本当に切り替わっているか
@@ -428,12 +438,12 @@ pnpm run verify
 ```
 
 ```
-✅ 全 lane のソースがバイト単位で同一 (7 files)
+✅ 全 lane のソースがバイト単位で同一 (14 files)
 
 | lane | 期待 vapor | 期待マウント関数 | HTML文字列テンプレート | VNode props | 判定 |
 |---|---|---|---|---|---|
-| classic | false | createApp | 0 | 16 | ✅ OK |
-| vapor | true | createVaporApp | 9 | 0 | ✅ OK |
+| classic | false | createApp | 0 | 27 | ✅ OK |
+| vapor | true | createVaporApp | 18 | 0 | ✅ OK |
 
 ✅ 両 lane が意図どおり別のコンパイル戦略でビルドされています
 ```

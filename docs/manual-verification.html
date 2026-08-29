@@ -449,7 +449,7 @@
       <div class="fact"><dt>パッケージ管理</dt><dd>pnpm 11.x（npm 不可）</dd></div>
       <div class="fact"><dt>検証対象</dt><dd>vue@3.6.0-rc.3</dd></div>
       <div class="fact"><dt>スクリーンリーダー</dt><dd>VoiceOver (macOS) + Safari</dd></div>
-      <div class="fact"><dt>検証カテゴリ</dt><dd>5 カテゴリ / 15 スナップショット</dd></div>
+      <div class="fact"><dt>検証カテゴリ</dt><dd>11 カテゴリ / 50 スナップショット</dd></div>
     </dl>
   </header>
 
@@ -513,9 +513,9 @@ diff -r apps/classic/src/components apps/vapor/src/components</code></pre>
         </div>
         <div>
           <span class="label">期待される結果</span>
-          <div class="expect">synced -&gt; apps/classic/src (7 files)
-synced -&gt; apps/vapor/src (7 files)
-✅ 全 lane のソースがバイト単位で同一 (7 files)
+          <div class="expect">synced -&gt; apps/classic/src (14 files)
+synced -&gt; apps/vapor/src (14 files)
+✅ 全 lane のソースがバイト単位で同一 (14 files)
 
 （typecheck も diff も何も出力しない）</div>
         </div>
@@ -552,39 +552,77 @@ synced -&gt; apps/vapor/src (7 files)
         </p>
         <div>
           <span class="label">コマンド</span>
-          <pre><code>pnpm run build   <span class="c"># build:classic と build:vapor をまとめて実行する</span></code></pre>
+          <pre><code>pnpm run build   <span class="c"># client 2系統 → SSR ビルド → プリレンダまで通す</span></code></pre>
+        </div>
+        <div class="callout">
+          <span class="label">SSR ビルドとプリレンダも含まれる</span>
+          <p><code>build</code> は <code>build:classic</code> → <code>build:vapor</code> →
+          <code>build:ssr</code>（両 lane の <code>entry-server.js</code>）→
+          <code>prerender</code> の4段。最後の <code>prerender</code> が
+          <code>renderToString</code> の出力を <code>ssr.html</code> の
+          <code>&lt;!--ssr-outlet--&gt;</code> に差し込み、<strong>両 lane の HTML が
+          バイト単位で同一かをその場でハッシュ照合する</strong>。</p>
+          <pre><code>| lane | HTML の長さ | sha256 (先頭12) |
+|---|---|---|
+| classic | 2630 | f25b4515ae73 |
+| vapor | 2630 | f25b4515ae73 |
+
+✅ サーバ描画の HTML は全 lane で同一 (hydration 前の入力が揃っている)</code></pre>
+          <p>ここが食い違ったら止める。hydration 前の入力が揃っていない状態で
+          hydration 後を比べても、差の原因を <code>createVaporSSRApp</code> に帰属できない。
+          <strong>このステップを飛ばすと <code>/ssr.html</code> が生成されず</strong>、
+          ステップ 06 の SSR シナリオと Part B の項目 B11 が失敗する。</p>
         </div>
         <div>
-          <span class="label">期待される結果（2026-08-22 計測時の参考値 / 6カテゴリ）</span>
+          <span class="label">期待される結果（2026-08-28 計測時の参考値 / 11カテゴリ）</span>
           <div class="lanes">
             <div class="lane lane-classic">
               <span class="lane-name">classic</span>
-              <p>71.48 kB / gzip 28.07 kB</p>
+              <p>91.74 kB / gzip 35.65 kB</p>
             </div>
             <div class="lane lane-vapor">
               <span class="lane-name">vapor</span>
-              <p>59.29 kB / gzip 22.72 kB</p>
+              <p>101.15 kB / gzip 36.48 kB</p>
             </div>
           </div>
         </div>
         <p class="why">
-          vapor 側は VDOM ランタイムを含まないぶん gzip で約 19% 小さい。
+          <strong>この時点で vapor は raw でも gzip でも classic より大きい。</strong>
+          6カテゴリ時点では gzip で 19% 小さかったので、優位は消えている。
+          「Vapor は小さい」を無条件の性質だと思っていると、ここで面食らう。
         </p>
         <div class="callout">
           <span class="label">この数字は機能セット依存</span>
-          <p>削減率は 1カテゴリ時点で約 37%、5カテゴリで 28.3%、
-          <code>v-for</code> を加えた6カテゴリで 19.1% と落ちている。
-          <strong>差の絶対値そのものが 7.77 kB → 5.35 kB に縮んでいる</strong>点が重要で、
+          <p>gzip 削減率は機能を足すたびに落ち、最後は逆転している。</p>
+          <pre><code>| 時点                                      | gzip 削減率 | gzip 差の絶対値 |
+|-------------------------------------------|-------------|-----------------|
+| 1カテゴリ                                 | 約 37%      | —               |
+| 5カテゴリ                                 | 28.3%       | 7.77 kB         |
+| 6カテゴリ (v-for 追加)                    | 19.1%       | 5.35 kB         |
+| 10カテゴリ (合成/Teleport/Transition/:is) | 3.6%        | 1.22 kB         |
+| 11カテゴリ (SSR / hydration 追加)         | -2.3%       | -0.83 kB (逆転) |</code></pre>
+          <p><strong>差の絶対値そのものが縮んで符号まで反転している</strong>点が重要で、
           アプリコードが両系統に等しく積み上がるだけなら比率は縮んでも絶対値は変わらない。
-          つまり vapor 側だけが余分に太った。<code>v-for</code> 1つの増分は
+          つまり vapor 側だけが余分に太っている。<code>v-for</code> 1つの増分は
           gzip で classic +0.63 kB に対し <strong>vapor +3.05 kB</strong>。
           Vapor は <code>createFor</code> / <code>ForBlock</code> を新たに引き込み、
           それが内部で <code>watch</code> を使うため reactivity 側
           （<code>watch</code> / <code>traverse</code> / <code>shallowRef</code>）まで入る。
           classic は VDOM の汎用パッチ機構が最初から入っているので増分が小さい。
-          <strong>発表で「Vapor は N% 小さい」と言うときは計測時点の機能セットを併記する。</strong></p>
+          Teleport / Transition / <code>:is</code> / hydration でも同じことが起きる。</p>
+          <p><strong>発表で「Vapor は N% 小さい」と言うときは計測時点の機能セットを必ず併記する。</strong></p>
+        </div>
+        <div class="callout">
+          <span class="label">11カテゴリの値は SSR エントリを含む</span>
+          <p><code>ssr.html</code> 用の entry (<code>main-ssr.js</code>) が同じ App チャンクを
+          共有するため、この計測値には hydration 経路のコードが両 lane とも入っている。
+          10カテゴリ時点 (classic 86.12 / vapor 88.56 kB) からの増分は
+          <strong>classic +5.62 kB に対し vapor +12.59 kB</strong>。
+          クライアント描画のみのアプリと直接は比較できない数字なので、
+          引用するときは「SSR 経路込み」と添える。</p>
         </div>
         <label class="check"><input type="checkbox"><span>両系統のビルドが成功し、サイズを記録した</span></label>
+        <label class="check"><input type="checkbox"><span>プリレンダが「全 lane で同一」を出した</span></label>
       </article>
 
       <!-- 04 -->
@@ -605,12 +643,12 @@ synced -&gt; apps/vapor/src (7 files)
         </div>
         <div>
           <span class="label">期待される結果</span>
-          <div class="expect">✅ 全 lane のソースがバイト単位で同一 (7 files)
+          <div class="expect">✅ 全 lane のソースがバイト単位で同一 (14 files)
 
 | lane | 期待 vapor | 期待マウント関数 | HTML文字列テンプレート | VNode props | 判定 |
 |---|---|---|---|---|---|
-| classic | false | createApp | 0 | 16 | ✅ OK |
-| vapor | true | createVaporApp | 9 | 0 | ✅ OK |
+| classic | false | createApp | 0 | 27 | ✅ OK |
+| vapor | true | createVaporApp | 18 | 0 | ✅ OK |
 
 ✅ 両 lane が意図どおり別のコンパイル戦略でビルドされています</div>
         </div>
@@ -673,10 +711,18 @@ synced -&gt; apps/vapor/src (7 files)
         </div>
         <p class="why">
           Playwright が classic を <code>:4173</code>、vapor を <code>:4174</code> でプレビュー起動し
-          （ビルドも自動で走る）、6カテゴリ × 各時点のアクセシビリティツリーを
+          （ビルドも自動で走る）、11カテゴリ × 各時点のアクセシビリティツリーを
           <code>e2e/snapshots/{classic,vapor}/</code> に YAML で保存する。
           ブラウザ本体が未取得の場合は初回だけインストールが要る。
         </p>
+        <div class="callout">
+          <span class="label">SSR シナリオだけ見ている URL が違う</span>
+          <p>10カテゴリは <code>index.html</code>（クライアント描画）を開くが、
+          <code>ssr-hydration</code> だけは <code>/ssr.html</code> を開く。
+          <strong>hydration 前は JavaScript を切ったコンテキストで撮る。</strong>
+          「hydration が終わる前に急いで撮る」方式にすると、撮れたかどうかが
+          実行速度に左右されて記録が信用できなくなるため。</p>
+        </div>
         <div class="callout">
           <span class="label">preview を立てたままでは失敗する</span>
           <p>Part B の <code>pnpm run preview:{lane}</code> を起動したまま実行すると
@@ -693,14 +739,14 @@ pnpm run test:e2e</code></pre>
         <div>
           <span class="label">期待される結果</span>
           <div class="expect">全シナリオ pass。e2e/snapshots/classic と e2e/snapshots/vapor に
-それぞれ 29 個の .yaml が生成される。</div>
+それぞれ 50 個の .yaml が生成される。</div>
         </div>
         <div class="callout">
           <span class="label">タイミング由来の偽陽性に注意</span>
           <p>スナップショット取得前に状態が確定していないと、Vapor とは無関係な差分が出る。
           シナリオを足すときは必ず <code>expect(...)</code> で状態を待ってから取得する。</p>
         </div>
-        <label class="check"><input type="checkbox"><span>両系統で 29 スナップショットずつ生成された</span></label>
+        <label class="check"><input type="checkbox"><span>両系統で 50 スナップショットずつ生成された</span></label>
       </article>
 
       <!-- 07 -->
@@ -720,7 +766,7 @@ open results/diff-report.md</code></pre>
         </div>
         <div>
           <span class="label">期待される結果</span>
-          <div class="expect">results/diff-report.md を出力 (29件中 差分あり 0件)</div>
+          <div class="expect">results/diff-report.md を出力 (50件中 差分あり 0件)</div>
         </div>
         <div class="table-wrap">
           <table>
@@ -816,6 +862,11 @@ grep -oE 'createElementBlock|createVNode|openBlock|toDisplayString' \
       ariaSnapshot と違って読み上げ検証は手作業なので、<strong>後から気付いても全カテゴリやり直し</strong>になる。
     </p>
     <pre><code>pnpm run sync &amp;&amp; pnpm run typecheck &amp;&amp; pnpm run build &amp;&amp; pnpm run verify</code></pre>
+    <p class="why">
+      <code>pnpm run build</code> は SSR ビルドとプリレンダまで走らせる。
+      項目 B11 が開く <code>/ssr.html</code> はここで生成されるので、
+      <strong>このコマンドを省略すると B11 だけ 404 になる</strong>。
+    </p>
 
     <h4>準備 2 — プレビューサーバを2つ起動する</h4>
     <p class="why">別々のターミナルで起動し、検証中は両方立てたままにする。</p>
@@ -863,7 +914,8 @@ pnpm run preview:vapor     <span class="c"># → localhost:4174</span></code></p
     </ul>
 
     <p class="part-note" style="margin-top:1.75rem">
-      以下の6カテゴリを、それぞれ classic → vapor の順で同一操作する。
+      以下の11カテゴリを、それぞれ classic → vapor の順で同一操作する。
+      B1〜B10 は <code>index.html</code>、<strong>B11 だけ <code>/ssr.html</code></strong> を開く。
     </p>
 
     <div class="steps">
@@ -1017,6 +1069,161 @@ pnpm run preview:vapor     <span class="c"># → localhost:4174</span></code></p
         <label class="check"><input type="checkbox"><span>classic / vapor 両方で記録した</span></label>
       </article>
 
+      <article class="step">
+        <div class="step-head">
+          <span class="step-num">B7</span>
+          <h3>コンポーネント合成: props / slots</h3>
+        </div>
+        <p class="why">入力欄のラベルは親、入力欄本体は子が持ち、両者は props で渡した
+        id だけで繋がっている。<strong>ラベルが読まれれば、境界越しの参照が生きている。</strong></p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th class="num">#</th><th>操作</th><th>キー</th></tr></thead>
+            <tbody>
+              <tr><td class="num">1</td><td>入力欄へフォーカスを移動する</td><td class="keys"><kbd>Tab</kbd></td></tr>
+              <tr><td class="num">2</td><td>読み上げを記録する（「表示名」と読まれるか）</td><td class="keys">（自動読み上げ）</td></tr>
+              <tr><td class="num">3</td><td>説明文まで読まれるかを記録する（「全角32文字まで」）</td><td class="keys">（自動読み上げ）</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout">
+          <span class="label">✕ にしてはいけないケース</span>
+          <p><code>aria-describedby</code> の読み上げは VoiceOver の詳細度設定に依存する。
+          説明文が読まれない場合は「詳細度の設定で読まれない」と書き、<strong>✕ にはしない</strong>。
+          両 lane で等しく読まれないなら、それは Vapor の差分ではない。</p>
+        </div>
+        <label class="check"><input type="checkbox"><span>classic / vapor 両方で記録した</span></label>
+      </article>
+
+      <article class="step">
+        <div class="step-head">
+          <span class="step-num">B8</span>
+          <h3>Teleport: body 直下へ移すダイアログ</h3>
+        </div>
+        <p class="why">操作は B2（フォーカス管理）と同一で、違いはダイアログの描画位置だけ。
+        <strong>2つを見比べるのが目的</strong>なので、B2 と同じ詳細度設定で続けて行う。</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th class="num">#</th><th>操作</th><th>キー</th></tr></thead>
+            <tbody>
+              <tr><td class="num">1</td><td>「通知パネルを開く」へフォーカスを移動する</td><td class="keys"><kbd>Tab</kbd></td></tr>
+              <tr><td class="num">2</td><td>押下してダイアログを開く</td><td class="keys"><kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
+              <tr><td class="num">3</td><td>開いた直後の読み上げを記録する</td><td class="keys">（自動読み上げ）</td></tr>
+              <tr><td class="num">4</td><td>ダイアログの外へ出られるか試す</td><td class="keys"><kbd>VO</kbd> + <kbd>→</kbd> を繰り返す</td></tr>
+              <tr><td class="num">5</td><td>「閉じる」を押し、復帰先の読み上げを記録する</td><td class="keys"><kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout">
+          <span class="label">B2 との差が本題</span>
+          <p>このダイアログは <code>body</code> 直下にあり <code>main</code> の外にいる。
+          DOM 上の位置が変わっても読み上げ順序と境界の扱いが同じかを、B2 の記録と並べて比較する。
+          異なれば <code>aria-modal</code> が同じでも体験が違うということで、
+          <strong>機械比較では出ない発見</strong>になる。</p>
+        </div>
+        <label class="check"><input type="checkbox"><span>classic / vapor 両方で記録した</span></label>
+      </article>
+
+      <article class="step">
+        <div class="step-head">
+          <span class="step-num">B9</span>
+          <h3>Transition: 退場アニメーション中のツリー</h3>
+        </div>
+        <p class="why">E2E で<strong>退場中は <code>role=alert</code> がツリーに残る</strong>ことを
+        確認済み（classic / vapor 共通）。ここで見たいのは、それが読み上げに乗るか。</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th class="num">#</th><th>操作</th><th>キー</th></tr></thead>
+            <tbody>
+              <tr><td class="num">1</td><td>「警告を出す」へフォーカスを移動して押下する</td><td class="keys"><kbd>Tab</kbd> → <kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
+              <tr><td class="num">2</td><td>警告の読み上げを記録する</td><td class="keys">（自動読み上げ）</td></tr>
+              <tr><td class="num">3</td><td>同じボタン（「警告を閉じる」）を押下する</td><td class="keys"><kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
+              <tr><td class="num">4</td><td>閉じた直後に警告が再度読まれないかを記録する</td><td class="keys">（自動読み上げ）</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout">
+          <span class="label">✕ ではなく所見に書く</span>
+          <p>手順4で警告が読み上げられたら、<strong>残留がユーザーに届いている</strong>ということ。
+          ただしこれは両系統で等しく起きるので lane 間の ✕ にはせず、
+          Transition を使う設計上の注意点として所見に書く。</p>
+        </div>
+        <label class="check"><input type="checkbox"><span>classic / vapor 両方で記録した</span></label>
+      </article>
+
+      <article class="step">
+        <div class="step-head">
+          <span class="step-num">B10</span>
+          <h3>動的コンポーネント: :is による差し替え</h3>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th class="num">#</th><th>操作</th><th>キー</th></tr></thead>
+            <tbody>
+              <tr><td class="num">1</td><td>「内訳へ切り替える」へフォーカスを移動して押下する</td><td class="keys"><kbd>Tab</kbd> → <kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
+              <tr><td class="num">2</td><td>差し替え後の領域を読ませて記録する（「内訳」）</td><td class="keys"><kbd>VO</kbd> + <kbd>→</kbd></td></tr>
+              <tr><td class="num">3</td><td>「概要へ切り替える」を押下する</td><td class="keys"><kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
+              <tr><td class="num">4</td><td>戻した後の領域を読ませて記録する（「概要」）</td><td class="keys"><kbd>VO</kbd> + <kbd>→</kbd></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="why"><strong>見るべき点：</strong>手順4で「内訳」と読まれたら、古い名前が残っている。
+        E2E では属性値が正しく入れ替わる（<code>aria-describedby</code> が付いて消える）ことを
+        確認済みなので、そこで差が出れば原因は <strong>支援技術側のキャッシュ</strong>であって DOM ではない。</p>
+        <label class="check"><input type="checkbox"><span>classic / vapor 両方で記録した</span></label>
+      </article>
+
+      <article class="step">
+        <div class="step-head">
+          <span class="step-num">B11</span>
+          <h3>SSR / hydration</h3>
+        </div>
+        <p class="why">
+          <strong>この項目だけ URL が違う。</strong>B1〜B10 は <code>index.html</code>
+          （クライアント描画）だが、ここは <code>/ssr.html</code> を開く。
+        </p>
+        <pre><code>classic → http://localhost:4173/ssr.html
+vapor   → http://localhost:4174/ssr.html</code></pre>
+        <p class="why">
+          サーバが描いた HTML は両 lane でバイト単位で同一（ステップ 03 の
+          <code>prerender</code> が毎回ハッシュ照合している）。それを classic は
+          <code>createSSRApp</code>、vapor は <code>createVaporSSRApp</code> という
+          <strong>別実装</strong>で引き継ぐ。ここで読み上げに差が出れば、
+          原因は hydration 実装の差以外にありえない。
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th class="num">#</th><th>操作</th><th>キー</th></tr></thead>
+            <tbody>
+              <tr><td class="num">1</td><td><code>/ssr.html</code> を開き、<code>main</code> を頭から3項目ぶん読ませて記録する</td><td class="keys"><kbd>VO</kbd> + <kbd>→</kbd></td></tr>
+              <tr><td class="num">2</td><td>「補足を切り替え」へフォーカスを移動して押下する</td><td class="keys"><kbd>Tab</kbd> → <kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
+              <tr><td class="num">3</td><td>差し込まれた補足の読み上げを記録する</td><td class="keys"><kbd>VO</kbd> + <kbd>→</kbd></td></tr>
+              <tr><td class="num">4</td><td>再度押下して閉じ、補足が読まれなくなることを記録する</td><td class="keys"><kbd>VO</kbd> + <kbd>Space</kbd> → <kbd>VO</kbd> + <kbd>→</kbd></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="why"><strong>手順1が本題。</strong>hydration はサーバが描いた既存の DOM を
+        後から乗っ取るため、支援技術が乗っ取り前のツリーを掴んだままだと、
+        画面の内容と読み上げが食い違う。B1〜B10 はクライアントが最初から描くので
+        この経路を通らない。</p>
+        <div class="callout">
+          <span class="label">手順2以降は hydration が繋がった確認</span>
+          <p>サーバの HTML にはイベントが載っていない。押して反応があれば
+          クライアント側が接続済みと判断できる。<strong>無反応なら hydration そのものが
+          失敗しており、手順1の記録も無効</strong>になる。</p>
+          <p><code>404</code> になる場合はステップ 03 の <code>pnpm run build</code> を
+          通していない（<code>ssr.html</code> はプリレンダで生成される）。</p>
+        </div>
+        <div class="callout">
+          <span class="label">警告が出るのは既知（Vapor 起因ではない）</span>
+          <p><code>v-model</code> 由来の <code>Hydration completed but contains mismatches.</code> が
+          <strong>両 lane で等しく</strong>出る。サーバは <code>value=""</code> を属性として出すが、
+          クライアントの <code>v-model</code> は DOM プロパティを設定するため属性が付かない。
+          詳細は <a href="../README.md">README</a> の「SSR / hydration」。</p>
+        </div>
+        <label class="check"><input type="checkbox"><span>classic / vapor 両方で記録した</span></label>
+      </article>
+
     </div>
 
     <h4>環境の明記は必須</h4>
@@ -1102,6 +1309,21 @@ pnpm run preview:vapor     <span class="c"># → localhost:4174</span></code></p
             <td><code>pnpm run smoke</code> が dist を見つけられない</td>
             <td>ビルド成果物がない、または minify なしのまま</td>
             <td><code>pnpm run build</code> で通常ビルドをやり直す</td>
+          </tr>
+          <tr>
+            <td><code>/ssr.html</code> が 404 になる</td>
+            <td>プリレンダを通していない（<code>build:classic</code> だけを個別に叩いた等）</td>
+            <td><code>pnpm run build</code> を通す。<code>build:ssr</code> と <code>prerender</code> まで含まれている</td>
+          </tr>
+          <tr>
+            <td>プリレンダが「lane 間で HTML が異なる」と言って落ちる</td>
+            <td>サーバ描画の出力が lane 間でズレた（Vue 側の変更が入った可能性）</td>
+            <td>止めて原因を調べる。hydration 前の入力が揃っていないと、hydration 後の差を Vapor に帰属できない</td>
+          </tr>
+          <tr>
+            <td>SSR シナリオで <code>Hydration completed but contains mismatches.</code> が出る</td>
+            <td><code>v-model</code> の初期値による既知の mismatch（<strong>両 lane 共通</strong>）</td>
+            <td>Vapor 起因ではないので無視してよい。警告はスナップショットの一時点として保存され、lane 間で差が出たときだけ落ちる</td>
           </tr>
         </tbody>
       </table>
