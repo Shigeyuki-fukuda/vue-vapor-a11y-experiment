@@ -258,7 +258,7 @@ vapor は `createVaporSSRApp` (`@vue/runtime-vapor` の独立実装) で引き�
 | 役割 | 実体 |
 |---|---|
 | サーバ描画 | [`apps/{lane}/src/entry-server.js`](apps/classic/src/entry-server.js) — **両 lane で同一内容**。`createSSRApp` + `renderToString` |
-| 描画結果の注入 | [`scripts/prerender.mjs`](scripts/prerender.mjs) — `ssr.html` の `<!--ssr-outlet-->` を置換 |
+| 描画結果の注入 | [`scripts/prerender.mjs`](scripts/prerender.mjs) — `ssr.html` の `<!--ssr-outlet-->` と `<!--ssr-teleports-->` を置換 |
 | hydration | `apps/classic/src/main-ssr.js` は `createSSRApp`、[`apps/vapor/src/main-ssr.js`](apps/vapor/src/main-ssr.js) は `createVaporSSRApp` |
 | 観測 | [ssr-hydration](e2e/scenarios/ssr-hydration.spec.mjs) — `/ssr.html` を開く |
 
@@ -266,10 +266,10 @@ vapor は `createVaporSSRApp` (`@vue/runtime-vapor` の独立実装) で引き�
 「同一のはず」を前提に書き込まず、将来の Vue で変わればその場で落ちる。
 
 ```
-| lane | HTML の長さ | sha256 (先頭12) |
-|---|---|---|
-| classic | 2630 | f25b4515ae73 |
-| vapor   | 2630 | f25b4515ae73 |
+| lane | HTML の長さ | teleports の長さ | sha256 (先頭12) |
+|---|---|---|---|
+| classic | 2630 | 57 | 167c9245a7c9 |
+| vapor   | 2630 | 57 | 167c9245a7c9 |
 ✅ サーバ描画の HTML は全 lane で同一 (hydration 前の入力が揃っている)
 ```
 
@@ -282,21 +282,26 @@ hydration 前の状態は **JavaScript を切ったコンテキスト**で撮る
 さらに各 lane 内でも hydration の前後でツリーは変化しなかった
 (`ssr-hydration.server.yaml` と `ssr-hydration.hydrated.yaml` が同一)。
 
-### v-model による hydration mismatch (両 lane 共通)
+### Teleport の未注入による hydration mismatch (解消済み)
 
-**`Hydration completed but contains mismatches.` が両系統で出る。**
+以前は両系統で `Hydration completed but contains mismatches.` が出ており、
+README はこれを `v-model` の `value` 属性差だと説明していた。**その説明は誤りで、
+実際の原因は `<Teleport to="body">` の中身を `ssr.html` へ注入していなかったこと**
+だった。`prerender` を修正したところ、両 lane とも警告が 0 件になった。
 
-原因は Vapor ではない。`ValidatedForm` の `v-model="email"` (初期値 `''`) に対し、
-サーバは `value=""` を属性として出力するが、クライアントの `v-model` は
-DOM プロパティを設定するため属性が付かない。
+`renderToString` は Teleport の描画結果を本体の HTML に含めず、
+`context.teleports.body` に溜める。ここを差し込まないと移動先 (`body`) に
+マーカーが無いまま hydration が始まり、クライアントは `body` の先頭から順に
+既存ノードを Teleport の中身として取り込む。
 
-```
-server: <input id="email-field" value="" type="text" aria-invalid="false">
-client: <input id="email-field" type="text" aria-invalid="false">
-```
+**取り込まれる個数は Teleport の子要素の数で決まる。** 現時点では `v-if` が1つ
+だけなので被害は1ノードに留まっているが、子を1つ増やすと `#app` まで届き、
+SSR のページが白紙になる (実測で確認した)。**それでも例外は出ず、残るのは
+上の警告1行だけ。** どのノードが消えたかは何も教えてくれない。
 
-**classic と vapor で完全に同じ**なので lane 間の差分ではなく、
-アクセシビリティツリーにも影響していない (差分 0 件)。
+差し込み位置を `body` の**先頭**にしているのは、Vue の Teleport が hydration 時に
+移動先の `firstChild` からマーカーを探すため。ここより前に要素を置くと、
+その要素が取り込まれて消える。
 
 警告は 0 件を要求せず、**時点として保存して lane 間で突き合わせている**
 (`ssr-hydration.warnings.yaml`)。見たいのは「警告が無いこと」ではなく

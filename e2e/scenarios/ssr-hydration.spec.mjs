@@ -65,8 +65,9 @@ for (const t of targets) {
     saveSnapshot(t.name, 'ssr-hydration', {
       server,
       hydrated,
-      // 警告も時点として保存する。0件を要求しないのは、v-model による
-      // 既知の mismatch が両 lane で等しく出るため (README「SSR / hydration」)。
+      // 警告も時点として保存する。0件を要求しないのは、両 lane で等しく出る
+      // mismatch がありうるため (README「SSR / hydration」)。以前は Teleport の
+      // 注入漏れによる警告が出ていたが、現在は 0 件。
       //
       // ここで見たいのは「警告が無いこと」ではなく「lane 間で同じかどうか」。
       // スナップショットにしておけば diff-snapshots が lane 間を突き合わせ、
