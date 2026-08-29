@@ -8,7 +8,7 @@ import { pathToFileURL } from 'node:url'
  * 以前は dist/assets/ を列挙して最初の .js を使っていたが、ページが
  * index.html と ssr.html の2つになった時点で、辞書順で先に来る共有チャンク
  * (App-*.js) を掴むようになった。共有チャンクはマウント処理を含まないため
- * 「保存ボタンが見つかりません」で落ちる。
+ * 「通知を表示ボタンが見つかりません」で落ちる。
  *
  * html から辿れば、チャンクの分かれ方が変わっても対象がずれない。
  */
@@ -36,10 +36,10 @@ async function run(name) {
 
   const before = document.querySelector('[role=status]')?.textContent ?? '(なし)'
   // 検証コンポーネントが増えても対象がずれないよう、ボタンはテキストで特定する
-  const saveButton = [...document.querySelectorAll('button')]
-    .find(b => b.textContent.trim() === '保存')
-  if (!saveButton) throw new Error(`[${name}] 「保存」ボタンが見つかりません`)
-  saveButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }))
+  const notifyButton = [...document.querySelectorAll('button')]
+    .find(b => b.textContent.trim() === '通知を表示')
+  if (!notifyButton) throw new Error(`[${name}] 「通知を表示」ボタンが見つかりません`)
+  notifyButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }))
   await new Promise(r => setTimeout(r, 50))
   const after = document.querySelector('[role=status]')?.textContent ?? '(なし)'
   console.log(`[${name}] click前: "${before.trim()}" → click後: "${after.trim()}"`)

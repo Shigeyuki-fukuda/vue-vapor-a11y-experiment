@@ -22,9 +22,11 @@
 | focus-management.closed | ✅ なし |
 | focus-management.focus-closed | ✅ なし |
 | focus-management.focus-opened | ✅ なし |
+| focus-management.focus-trapped | ✅ なし |
 | focus-management.initial | ✅ なし |
 | focus-management.opened-attrs | ✅ なし |
 | focus-management.opened | ✅ なし |
+| form-error.focus-invalid | ✅ なし |
 | form-error.invalid-attrs | ✅ なし |
 | form-error.invalid | ✅ なし |
 | form-error.pristine-attrs | ✅ なし |
@@ -41,12 +43,15 @@
 | list-reorder.selected | ✅ なし |
 | live-region.after | ✅ なし |
 | live-region.before | ✅ なし |
+| live-region.dismissed | ✅ なし |
+| live-region.repeated | ✅ なし |
 | ssr-hydration.hydrated | ✅ なし |
 | ssr-hydration.server | ✅ なし |
 | ssr-hydration.warnings | ✅ なし |
 | teleport-dialog.closed | ✅ なし |
 | teleport-dialog.focus-closed | ✅ なし |
 | teleport-dialog.focus-opened | ✅ なし |
+| teleport-dialog.focus-trapped | ✅ なし |
 | teleport-dialog.opened-app | ✅ なし |
 | teleport-dialog.opened-attrs | ✅ なし |
 | teleport-dialog.opened | ✅ なし |

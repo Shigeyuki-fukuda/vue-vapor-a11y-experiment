@@ -30,12 +30,37 @@ for (const t of targets) {
     const focusOpened = await page.locator(':focus').ariaSnapshot()
     const openedAttrs = await snapshotAttributes(dialog, DIALOG_ATTRIBUTES)
 
-    // ③ 閉じる → 消滅とフォーカス復帰の完了を待ってから取得
-    await page.getByRole('button', { name: '閉じる' }).click()
+    // ③ Tab がダイアログの外へ出ないこと (フォーカストラップ)
+    //
+    // aria-modal は Tab 順に何の影響も与えないため、トラップが無いと
+    // 2回目の Tab で次のセクションのボタンへ抜ける。ここが assert して
+    // いるのは「抜けないこと」で、抜けた場合は :focus のツリーが
+    // 「コンパイル結果の詳細」ボタンになって落ちる。
+    const closer = page.getByRole('button', { name: '閉じる' })
+    await page.keyboard.press('Tab')
+    await expect(closer).toBeFocused()
+    await page.keyboard.press('Tab')
+    await expect(closer).toBeFocused()
+    const focusTrapped = await page.locator(':focus').ariaSnapshot()
+
+    // 逆順でも同じ。ダイアログ内で折り返す
+    await page.keyboard.press('Shift+Tab')
+    await expect(closer).toBeFocused()
+
+    // ④ Escape で閉じる → 消滅とフォーカス復帰の完了を待ってから取得
+    await page.keyboard.press('Escape')
     await expect(dialog).toBeHidden()
     await expect(opener).toBeFocused()
     const closed = await page.locator('#app').ariaSnapshot()
     const focusClosed = await page.locator(':focus').ariaSnapshot()
+
+    // ⑤ 「閉じる」ボタンでも閉じられること。Escape だけを確認すると、
+    // ボタン経由の close() が壊れても誰も気付かない
+    await opener.click()
+    await expect(dialog).toBeVisible()
+    await closer.click()
+    await expect(dialog).toBeHidden()
+    await expect(opener).toBeFocused()
 
     // ariaSnapshot はフォーカス位置を持たないため、フォーカス中の要素の
     // アクセシビリティ表現を別時点として保存し、これも差分比較の対象にする
@@ -44,6 +69,7 @@ for (const t of targets) {
       opened,
       closed,
       'focus-opened': focusOpened,
+      'focus-trapped': focusTrapped,
       'focus-closed': focusClosed,
       'opened-attrs': openedAttrs,
     })

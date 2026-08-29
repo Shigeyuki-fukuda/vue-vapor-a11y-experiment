@@ -19,7 +19,7 @@ defineProps<{
 </script>
 
 <template>
-  <div>
+  <div class="field">
     <input type="text" :aria-labelledby="labelId" :aria-describedby="descriptionId" />
     <!--
       スロットの中身は親が書くが、描画位置はこの子が決める。

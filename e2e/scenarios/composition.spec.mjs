@@ -30,7 +30,7 @@ for (const t of targets) {
     // スロット経由で描画された説明文が、子の指定した位置に入っていること。
     // 親が書いた要素なので、入る場所を間違えるとツリー上の親子関係が変わる
     const description = page.locator('#composed-description')
-    await expect(description).toHaveText('全角32文字まで')
+    await expect(description).toHaveText('ほかの利用者に公開されます。全角32文字まで。')
 
     const composed = await page.locator('#app').ariaSnapshot()
     const attrs = await snapshotAttributes(field, FIELD_ATTRIBUTES)
