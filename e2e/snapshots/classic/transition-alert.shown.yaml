@@ -2,7 +2,7 @@
   - heading "Vue Vapor A11y Experiment" [level=1]
   - 'region "Live Region: トースト通知"':
     - 'heading "Live Region: トースト通知" [level=2]'
-    - button "保存"
+    - button "通知を表示"
     - status
   - 'region "フォーカス管理: モーダルダイアログ"':
     - 'heading "フォーカス管理: モーダルダイアログ" [level=2]'
@@ -30,7 +30,7 @@
     - heading "props / slots によるコンポーネント合成" [level=2]
     - text: 表示名
     - textbox "表示名"
-    - paragraph: 全角32文字まで
+    - paragraph: ほかの利用者に公開されます。全角32文字まで。
   - 'region "Teleport: body 直下へ移すダイアログ"':
     - 'heading "Teleport: body 直下へ移すダイアログ" [level=2]'
     - button "通知パネルを開く"
@@ -40,7 +40,10 @@
     - alert: 保存に失敗しました
   - 'region "動的コンポーネント: :is による差し替え"':
     - 'heading "動的コンポーネント: :is による差し替え" [level=2]'
-    - button "内訳へ切り替える"
-    - region "概要":
-      - heading "概要" [level=3]
-      - paragraph: アクセシビリティツリーは全カテゴリで一致している。
+    - button "カード表示に切り替える"
+    - region "一覧表示":
+      - heading "一覧表示" [level=3]
+      - list:
+        - listitem: 2026年7月 請求書.pdf 7月2日 更新 · 220 KB
+        - listitem: 登壇資料 v3.key 7月18日 更新 · 12.4 MB
+        - listitem: 検証ログ.csv 7月26日 更新 · 48 KB

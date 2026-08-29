@@ -54,8 +54,8 @@ Vite 設定側にあり、コンポーネントには一切現れない。意図
 
 | lane | HTML 文字列テンプレート (Vapor) | VNode props (VDOM) |
 |---|---|---|
-| classic | 0 | 16 |
-| vapor | 9 | 0 |
+| classic | 0 | 29 |
+| vapor | 22 | 0 |
 
 どちらの方向も見ているため、「Vapor になっていない」と「VDOM が混入した」の
 両方を検出できる。0 件はマーカー自体が陳腐化した場合にも起きるので、
@@ -189,8 +189,8 @@ CI で再生成されて未追跡のまま残り、**ベースラインが1件�
 
 | カテゴリ | 検証内容 | シナリオ | 差分 |
 |---|---|---|---|
-| live region | `role=status` の動的更新 | [live-region](e2e/scenarios/live-region.spec.mjs) | ✅ なし |
-| フォーカス管理 | モーダル開閉時のフォーカス移動・復帰、`aria-modal` | [focus-management](e2e/scenarios/focus-management.spec.mjs) | ✅ なし |
+| live region | `role=status` の動的更新、同じ文言を2回出したときの再アナウンス、自動消去 | [live-region](e2e/scenarios/live-region.spec.mjs) | ✅ なし |
+| フォーカス管理 | モーダル開閉時のフォーカス移動・復帰、`aria-modal`、Tab のフォーカストラップ、Escape で閉じる | [focus-management](e2e/scenarios/focus-management.spec.mjs) | ✅ なし |
 | 動的 aria 属性 | `aria-expanded` の更新、`aria-controls` の関連付け | [dynamic-aria](e2e/scenarios/dynamic-aria.spec.mjs) | ✅ なし |
 | フォームエラー | `aria-invalid` / `aria-describedby` の紐付け | [form-error](e2e/scenarios/form-error.spec.mjs) | ✅ なし |
 | 条件付き描画 | `v-if` / `v-show` によるツリーの出入り | [conditional-render](e2e/scenarios/conditional-render.spec.mjs) | ✅ なし |
@@ -212,6 +212,49 @@ CI で再生成されて未追跡のまま残り、**ベースラインが1件�
 Vapor の問題ではなく、Transition を使う限り両方で起きる。
 閉じた直後に読み上げが走る設計にしていると、支援技術には
 「閉じたはずの警告がまだある」と伝わりうる。
+
+## 検証コンポーネントをどこまで UI として実装したか
+
+`source/components/` は比較装置であると同時に、**発表で見せるデモであり、
+実装例として読まれる**。当初は「ariaSnapshot が classic と vapor で一致すること」
+だけを完了基準にしていたため、aria 属性は名乗っているのに振る舞いが伴っていない
+状態だった (ダイアログから Tab で抜けられる、トーストが消えない、など)。
+比較装置としては足りていても、UI としては不完全なので実装した。
+
+| 実装したもの | 対象 |
+|---|---|
+| Tab のフォーカストラップと Escape で閉じる | `FocusDialog` / `TeleportDialog` |
+| 背後のクリックを遮る幕 (`aria-hidden`) | 同上 |
+| 同じ文言でも2回目が読み上げられる、一定時間で消える | `LiveRegionToast` |
+| 送信失敗時に不正な入力欄へフォーカスを戻す、`type="email"` | `ValidatedForm` |
+| モーダルらしい見た目とフォーカスリング | `App.vue` の非 scoped スタイル |
+| classic / vapor を画面で見分ける帯 | `apps/{lane}/index.html`・`ssr.html` |
+
+<details>
+<summary>背景を <code>inert</code> にしなかった理由</summary>
+
+`inert` は背後をアクセシビリティツリーごと消す。VoiceOver 手順の項目2 / 項目8 が
+見ているのは「`aria-modal` **だけ**でダイアログの外へ出られなくなるか」なので、
+`inert` を足すと観測対象そのものが消え、`aria-modal` ではなく `inert` を
+テストすることになる。
+
+ポインタ操作の遮断は `aria-hidden="true"` を付けた幕が担当する。
+アクセシビリティツリーに出ないため ariaSnapshot は変わらない。
+
+</details>
+
+<details>
+<summary>lane 帯を <code>#app</code> の外に置いた理由</summary>
+
+`teleport-dialog` のシナリオは Teleport が `body` 直下へ出るため、
+`body` 全体の ariaSnapshot を2箇所で撮っている。ツリーに乗る位置へ帯を足すと、
+帯の文言 (`classic` / `vapor`) がそのまま lane 間の**恒常的な差分**になる。
+
+`#app` の外 + `aria-hidden="true"` にすることで、画面と録画には残しつつ
+スナップショットは不変に保っている。lane 表示は検証者向けの装置であって
+被験対象ではないので、筋としても合っている。
+
+</details>
 
 ## 検証範囲の限界
 
@@ -268,8 +311,8 @@ vapor は `createVaporSSRApp` (`@vue/runtime-vapor` の独立実装) で引き�
 ```
 | lane | HTML の長さ | teleports の長さ | sha256 (先頭12) |
 |---|---|---|---|
-| classic | 2630 | 57 | 167c9245a7c9 |
-| vapor   | 2630 | 57 | 167c9245a7c9 |
+| classic | 2679 | 64 | 031a38b7e407 |
+| vapor   | 2679 | 64 | 031a38b7e407 |
 ✅ サーバ描画の HTML は全 lane で同一 (hydration 前の入力が揃っている)
 ```
 
@@ -294,14 +337,28 @@ README はこれを `v-model` の `value` 属性差だと説明していた。**
 マーカーが無いまま hydration が始まり、クライアントは `body` の先頭から順に
 既存ノードを Teleport の中身として取り込む。
 
-**取り込まれる個数は Teleport の子要素の数で決まる。** 現時点では `v-if` が1つ
-だけなので被害は1ノードに留まっているが、子を1つ増やすと `#app` まで届き、
-SSR のページが白紙になる (実測で確認した)。**それでも例外は出ず、残るのは
-上の警告1行だけ。** どのノードが消えたかは何も教えてくれない。
+```
+取り込まれた後の body:
+<div class="lane-banner" …>classic / ssr</div><!----><!---->
+                                              ^ #app と <script> が消えている
+```
 
-差し込み位置を `body` の**先頭**にしているのは、Vue の Teleport が hydration 時に
-移動先の `firstChild` からマーカーを探すため。ここより前に要素を置くと、
-その要素が取り込まれて消える。
+**ページは白紙になるが例外は出ない。** 残るのは上の1行の警告だけで、
+どのノードが消えたかは何も教えてくれない。
+
+<details>
+<summary>なぜ今まで表面化しなかったか</summary>
+
+Teleport の子要素が `v-if` 1つだけだった間は、取り込まれるノードが1個で
+済んでいた。フォーカストラップ用の幕を足して子が2つになった時点で
+`#app` まで届き、SSR のページが白紙になった。
+
+つまり**注入漏れは最初から存在していた**。警告として出てはいたが、
+別の原因 (`v-model`) に帰属させていたため、修正すべき欠陥として扱われなかった。
+警告文を時点として保存していたおかげで、「以前は出ていて今は出ない」という
+形で変化を追える状態にはなっていた。
+
+</details>
 
 警告は 0 件を要求せず、**時点として保存して lane 間で突き合わせている**
 (`ssr-hydration.warnings.yaml`)。見たいのは「警告が無いこと」ではなく
@@ -501,7 +558,7 @@ vapor 側は HTML 文字列テンプレート + 直接 DOM 操作 (`template()` 
 
 ### ariaSnapshot 差分 (全11カテゴリ)
 
-`pnpm run test:e2e && pnpm run diff` の結果、**50スナップショットすべてで
+`pnpm run test:e2e && pnpm run diff` の結果、**55スナップショットすべてで
 classic と vapor のアクセシビリティツリーが完全一致 (差分 0 件)**。
 
 ```
@@ -510,7 +567,8 @@ classic と vapor のアクセシビリティツリーが完全一致 (差分 0 
   - 'region "Live Region: トースト通知"':
     - 'heading "Live Region: トースト通知" [level=2]'
     - button "保存"
-    - status: 保存しました
+    - status:
+      - paragraph: 通知が届きました
   - 'region "フォーカス管理: モーダルダイアログ"':
     - 'heading "フォーカス管理: モーダルダイアログ" [level=2]'
     - button "設定を開く"
@@ -545,17 +603,19 @@ classic と vapor のアクセシビリティツリーが完全一致 (差分 0 
 
 `ariaSnapshot()` の出力にフォーカス位置は含まれない。そのため
 フォーカス管理シナリオでは `:focus` 要素のアクセシビリティ表現を
-`focus-opened` / `focus-closed` という別時点として保存し、これも比較対象にしている。
+`focus-opened` / `focus-trapped` / `focus-closed` という別時点として保存し、
+これも比較対象にしている。
 
 ```
-focus-opened:              focus-closed:
-- dialog "表示設定":         - button "設定を開く"
+focus-opened:                    focus-trapped:      focus-closed:
+- dialog "表示設定":               - button "閉じる"    - button "設定を開く"
   - heading "表示設定" [level=3]
   - button "閉じる"
 ```
 
 ダイアログを開くとダイアログ自身へ、閉じると呼び出し元のボタンへフォーカスが
-戻る挙動が、2系統で一致していることを示す。
+戻る挙動が、2系統で一致していることを示す。`focus-trapped` は Tab を2回押した
+時点で、トラップが無ければ次のセクションのボタンが記録される。
 
 #### ariaSnapshot が出さないもの
 
@@ -651,7 +711,14 @@ diff -r apps/classic/src/components apps/vapor/src/components
 (出力なし)
 ```
 
-コンポーネント以外で lane ごとに異なるのは entry の `main.js` (マウント関数) と
-`index.html` の `<title>` (`classic` / `vapor`) のみ。前者は `pnpm run verify` が
-検証しており、後者は VoiceOver 検証でどちらのタブを操作しているかを
-区別するために意図的に残している。
+コンポーネント以外で lane ごとに異なるのは次の3つだけ。
+
+| 差分 | 目的 |
+|---|---|
+| `main.js` のマウント関数 (`createApp` / `createVaporApp`) | 検証対象そのもの。`pnpm run verify` が検証する |
+| `main-ssr.js` のマウント関数 (`createSSRApp` / `createVaporSSRApp`) | SSR カテゴリの観測点そのもの |
+| `index.html` / `ssr.html` の `<title>` と lane 帯 | VoiceOver 検証でどちらを操作しているかを見分ける |
+
+lane 帯は `#app` の外にあり `aria-hidden="true"` なので、アクセシビリティツリーには
+出ない (差分 0 件がそれを裏付けている)。`entry-server.js` は lane ごとに置いてあるが
+内容は同一で、SSR 出力の一致を `prerender` が毎回確かめる。

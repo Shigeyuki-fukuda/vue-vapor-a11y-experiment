@@ -449,7 +449,7 @@
       <div class="fact"><dt>パッケージ管理</dt><dd>pnpm 11.x（npm 不可）</dd></div>
       <div class="fact"><dt>検証対象</dt><dd>vue@3.6.0-rc.3</dd></div>
       <div class="fact"><dt>スクリーンリーダー</dt><dd>VoiceOver (macOS) + Safari</dd></div>
-      <div class="fact"><dt>検証カテゴリ</dt><dd>11 カテゴリ / 50 スナップショット</dd></div>
+      <div class="fact"><dt>検証カテゴリ</dt><dd>11 カテゴリ / 55 スナップショット</dd></div>
     </dl>
   </header>
 
@@ -565,8 +565,8 @@ synced -&gt; apps/vapor/src (14 files)
           バイト単位で同一かをその場でハッシュ照合する</strong>。</p>
           <pre><code>| lane | HTML の長さ | teleports の長さ | sha256 (先頭12) |
 |---|---|---|---|
-| classic | 2630 | 57 | 167c9245a7c9 |
-| vapor | 2630 | 57 | 167c9245a7c9 |
+| classic | 2679 | 64 | 031a38b7e407 |
+| vapor | 2679 | 64 | 031a38b7e407 |
 
 ✅ サーバ描画の HTML は全 lane で同一 (hydration 前の入力が揃っている)</code></pre>
           <p>ここが食い違ったら止める。hydration 前の入力が揃っていない状態で
@@ -683,7 +683,7 @@ synced -&gt; apps/vapor/src (14 files)
           <h3>スモークテストで配線を確認する</h3>
         </div>
         <p class="why">
-          happy-dom 上でビルド成果物を読み込み、「保存」ボタンの押下が <code>role=status</code> に
+          happy-dom 上でビルド成果物を読み込み、「通知を表示」ボタンの押下が <code>role=status</code> に
           反映されるかだけを見る最小チェック。Vapor は素の DOM API を直接叩くため、
           ここで落ちるならアクセシビリティ以前の問題。
         </p>
@@ -693,15 +693,15 @@ synced -&gt; apps/vapor/src (14 files)
         </div>
         <div>
           <span class="label">期待される結果</span>
-          <div class="expect">[classic] click前: "" → click後: "保存しました"
-[vapor] click前: "" → click後: "保存しました"</div>
+          <div class="expect">[classic] click前: "" → click後: "通知が届きました"
+[vapor] click前: "" → click後: "通知が届きました"</div>
         </div>
         <div class="callout">
           <span class="label">つまずきやすい点</span>
           <p><code>dist</code> が見つからない場合はステップ 03 を先に実行する。ステップ 08 の
           <code>--minify false</code> ビルドを行った直後も、通常ビルドに戻してから実行すること。</p>
         </div>
-        <label class="check"><input type="checkbox"><span>両系統とも「保存しました」に更新された</span></label>
+        <label class="check"><input type="checkbox"><span>両系統とも「通知が届きました」に更新された</span></label>
       </article>
 
       <!-- 06 -->
@@ -740,14 +740,14 @@ pnpm run test:e2e</code></pre>
         <div>
           <span class="label">期待される結果</span>
           <div class="expect">全シナリオ pass。e2e/snapshots/classic と e2e/snapshots/vapor に
-それぞれ 50 個の .yaml が生成される。</div>
+それぞれ 55 個の .yaml が生成される。</div>
         </div>
         <div class="callout">
           <span class="label">タイミング由来の偽陽性に注意</span>
           <p>スナップショット取得前に状態が確定していないと、Vapor とは無関係な差分が出る。
           シナリオを足すときは必ず <code>expect(...)</code> で状態を待ってから取得する。</p>
         </div>
-        <label class="check"><input type="checkbox"><span>両系統で 50 スナップショットずつ生成された</span></label>
+        <label class="check"><input type="checkbox"><span>両系統で 55 スナップショットずつ生成された</span></label>
       </article>
 
       <!-- 07 -->
@@ -767,7 +767,7 @@ open results/diff-report.md</code></pre>
         </div>
         <div>
           <span class="label">期待される結果</span>
-          <div class="expect">results/diff-report.md を出力 (50件中 差分あり 0件)</div>
+          <div class="expect">results/diff-report.md を出力 (55件中 差分あり 0件)</div>
         </div>
         <div class="table-wrap">
           <table>
@@ -883,8 +883,12 @@ pnpm run preview:vapor     <span class="c"># → localhost:4174</span></code></p
       逃げてしまうと 4174 が埋まっていて vapor が 4175 で起動し、4173 に残った classic を相手に
       「classic 同士」を比較する事故が起きる。VoiceOver は何も言わずに読み上げるので、
       この事故は自力では気付けない。</p>
-      <p>操作中の lane はタブのタイトル（<code>classic</code> / <code>vapor</code>）で確認する。
-      <code>index.html</code> の <code>&lt;title&gt;</code> を lane ごとに変えているのはこのため。</p>
+      <p><strong>操作中の lane は画面最上部の帯で確認する。</strong>classic は青の無地、
+      vapor は橙の斜線で、色が飛んでも模様で見分けられる。録画にもそのまま残るので、
+      あとから映像だけで「どちらを操作していたか」を確定できる。
+      タブのタイトル（<code>classic</code> / <code>vapor</code>）も従来どおり残してある。</p>
+      <p>帯は <code>#app</code> の外にあり <code>aria-hidden="true"</code> を付けてあるため、
+      VoiceOver は読み上げず ariaSnapshot にも現れない。</p>
     </div>
 
     <h4>準備 3 — VoiceOver とキャプションパネル</h4>
@@ -931,14 +935,23 @@ pnpm run preview:vapor     <span class="c"># → localhost:4174</span></code></p
             <thead><tr><th class="num">#</th><th>操作</th><th>キー</th></tr></thead>
             <tbody>
               <tr><td class="num">1</td><td>Safari で対象 URL を開く</td><td class="keys">—</td></tr>
-              <tr><td class="num">2</td><td>フォーカスを「保存」へ移動し、読み上げを記録する</td><td class="keys"><kbd>Tab</kbd></td></tr>
+              <tr><td class="num">2</td><td>フォーカスを「通知を表示」へ移動し、読み上げを記録する</td><td class="keys"><kbd>Tab</kbd></td></tr>
               <tr><td class="num">3</td><td>ボタンを押下する</td><td class="keys"><kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
               <tr><td class="num">4</td><td>live region の読み上げを記録する</td><td class="keys">（自動読み上げ）</td></tr>
+              <tr><td class="num">5</td><td><strong>もう一度</strong>押下し、2回目も読み上げられるか記録する</td><td class="keys"><kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
+              <tr><td class="num">6</td><td>5 秒待ち、通知が消えることを確認する</td><td class="keys">—</td></tr>
             </tbody>
           </table>
         </div>
         <p class="why"><strong>見るべき点：</strong><code>role=status</code> は控えめな通知なので、読み上げ中の内容を中断しない。
         中断されるようなら差分として記録する。</p>
+        <div class="callout">
+          <span class="label">手順 5 が重要</span>
+          <p>文言は1回目と同じ「通知が届きました」だが、押すたびに新しい行が積まれるので
+          live region は毎回読み上げるはず。<strong>以前の実装は同じ文字列を代入し直すだけで
+          DOM が変化せず、2回目が読まれなかった。</strong>これは Vapor の挙動ではなく実装の問題で、
+          確認のため2回押した検証者を誤解させるため直してある。</p>
+        </div>
         <label class="check"><input type="checkbox"><span>classic / vapor 両方で記録した</span></label>
       </article>
 
@@ -954,17 +967,27 @@ pnpm run preview:vapor     <span class="c"># → localhost:4174</span></code></p
               <tr><td class="num">1</td><td>フォーカスを「設定を開く」へ移動する</td><td class="keys"><kbd>Tab</kbd></td></tr>
               <tr><td class="num">2</td><td>押下してダイアログを開き、直後の読み上げを記録する</td><td class="keys"><kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
               <tr><td class="num">3</td><td>フォーカスを「閉じる」へ移動する</td><td class="keys"><kbd>Tab</kbd></td></tr>
-              <tr><td class="num">4</td><td>押下して閉じ、直後の読み上げを記録する</td><td class="keys"><kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
-              <tr><td class="num">5</td><td>ダイアログの外へ出られるか試す</td><td class="keys"><kbd>VO</kbd> + <kbd>→</kbd></td></tr>
+              <tr><td class="num">4</td><td><strong>もう一度</strong> <kbd>Tab</kbd> を押し、行き先の読み上げを記録する</td><td class="keys"><kbd>Tab</kbd></td></tr>
+              <tr><td class="num">5</td><td>押下して閉じ、直後の読み上げを記録する</td><td class="keys"><kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
+              <tr><td class="num">6</td><td>ダイアログの外へ出られるか試す</td><td class="keys"><kbd>VO</kbd> + <kbd>→</kbd></td></tr>
+              <tr><td class="num">7</td><td>再度開き、<kbd>Escape</kbd> で閉じたときの読み上げを記録する</td><td class="keys"><kbd>Escape</kbd></td></tr>
             </tbody>
           </table>
         </div>
-        <p class="why"><strong>最も差分の出る可能性が高い項目。</strong>見るべきは3点。</p>
+        <p class="why"><strong>最も差分の出る可能性が高い項目。</strong>見るべきは4点。</p>
         <ul>
           <li>開いたとき「ダイアログ 表示設定」のようにロールごと読み上げるか</li>
           <li>閉じたときフォーカスが「設定を開く」に戻り、それが読み上げられるか</li>
           <li>ダイアログの外に <kbd>VO</kbd> + <kbd>→</kbd> で出られてしまわないか（<code>aria-modal</code> の効き）</li>
+          <li><strong>手順 4 で「閉じる」に留まるか</strong>（<kbd>Tab</kbd> のフォーカストラップ）。
+              「コンパイル結果の詳細」と読まれたらダイアログの外へ出ている</li>
         </ul>
+        <div class="callout">
+          <span class="label">aria-modal と Tab は別の仕組み</span>
+          <p><code>aria-modal</code> は VoiceOver のカーソルに対する宣言で、<strong>Tab 順には効かない</strong>。
+          そのため分けて記録する。背景を <code>inert</code> にしていないのは、3点目の観測対象
+          （<code>aria-modal</code> だけで外へ出られなくなるか）が消えてしまうため。</p>
+        </div>
         <label class="check"><input type="checkbox"><span>classic / vapor 両方で記録した</span></label>
       </article>
 
@@ -1000,12 +1023,18 @@ pnpm run preview:vapor     <span class="c"># → localhost:4174</span></code></p
               <tr><td class="num">1</td><td>フォーカスを入力欄へ移動し、ラベルの読み上げを記録する</td><td class="keys"><kbd>Tab</kbd></td></tr>
               <tr><td class="num">2</td><td><code>not-an-email</code> と入力する</td><td class="keys">（キーボード入力）</td></tr>
               <tr><td class="num">3</td><td>「送信」へ移動して押下し、エラー発生時の読み上げを記録する</td><td class="keys"><kbd>Tab</kbd> → <kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
-              <tr><td class="num">4</td><td>入力欄へ戻り、エラーと紐付いた状態の読み上げを記録する</td><td class="keys"><kbd>VO</kbd> + <kbd>←</kbd></td></tr>
+              <tr><td class="num">4</td><td>フォーカスが入力欄へ戻ったときの読み上げを記録する</td><td class="keys">（自動移動）</td></tr>
             </tbody>
           </table>
         </div>
-        <p class="why"><strong>見るべき点：</strong>入力欄にフォーカスを戻したとき <code>aria-describedby</code> 経由で
+        <p class="why"><strong>見るべき点：</strong>入力欄にフォーカスが移ったとき <code>aria-describedby</code> 経由で
         エラー文が読み上げられるか。<code>role=alert</code> の即時読み上げとは別物なので、両方を別々に記録する。</p>
+        <div class="callout">
+          <span class="label">送信に失敗するとフォーカスは自動で戻る</span>
+          <p>手順 4 は <kbd>VO</kbd> + <kbd>←</kbd> で戻す操作ではなく、移動先で自動的に読まれる内容の記録。
+          <code>role=alert</code> はエラー文を読み上げるだけで、フォーカスは「送信」に残る。
+          移していないとキーボード利用者はどこを直せばよいか分からない。</p>
+        </div>
         <label class="check"><input type="checkbox"><span>classic / vapor 両方で記録した</span></label>
       </article>
 
@@ -1083,7 +1112,7 @@ pnpm run preview:vapor     <span class="c"># → localhost:4174</span></code></p
             <tbody>
               <tr><td class="num">1</td><td>入力欄へフォーカスを移動する</td><td class="keys"><kbd>Tab</kbd></td></tr>
               <tr><td class="num">2</td><td>読み上げを記録する（「表示名」と読まれるか）</td><td class="keys">（自動読み上げ）</td></tr>
-              <tr><td class="num">3</td><td>説明文まで読まれるかを記録する（「全角32文字まで」）</td><td class="keys">（自動読み上げ）</td></tr>
+              <tr><td class="num">3</td><td>注記まで読まれるかを記録する（「ほかの利用者に公開されます。全角32文字まで。」）</td><td class="keys">（自動読み上げ）</td></tr>
             </tbody>
           </table>
         </div>
@@ -1111,7 +1140,8 @@ pnpm run preview:vapor     <span class="c"># → localhost:4174</span></code></p
               <tr><td class="num">2</td><td>押下してダイアログを開く</td><td class="keys"><kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
               <tr><td class="num">3</td><td>開いた直後の読み上げを記録する</td><td class="keys">（自動読み上げ）</td></tr>
               <tr><td class="num">4</td><td>ダイアログの外へ出られるか試す</td><td class="keys"><kbd>VO</kbd> + <kbd>→</kbd> を繰り返す</td></tr>
-              <tr><td class="num">5</td><td>「閉じる」を押し、復帰先の読み上げを記録する</td><td class="keys"><kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
+              <tr><td class="num">5</td><td><kbd>Tab</kbd> を2回押し、行き先の読み上げを記録する</td><td class="keys"><kbd>Tab</kbd> ×2</td></tr>
+              <tr><td class="num">6</td><td>「閉じる」を押し、復帰先の読み上げを記録する</td><td class="keys"><kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
             </tbody>
           </table>
         </div>
@@ -1161,14 +1191,14 @@ pnpm run preview:vapor     <span class="c"># → localhost:4174</span></code></p
           <table>
             <thead><tr><th class="num">#</th><th>操作</th><th>キー</th></tr></thead>
             <tbody>
-              <tr><td class="num">1</td><td>「内訳へ切り替える」へフォーカスを移動して押下する</td><td class="keys"><kbd>Tab</kbd> → <kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
-              <tr><td class="num">2</td><td>差し替え後の領域を読ませて記録する（「内訳」）</td><td class="keys"><kbd>VO</kbd> + <kbd>→</kbd></td></tr>
-              <tr><td class="num">3</td><td>「概要へ切り替える」を押下する</td><td class="keys"><kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
-              <tr><td class="num">4</td><td>戻した後の領域を読ませて記録する（「概要」）</td><td class="keys"><kbd>VO</kbd> + <kbd>→</kbd></td></tr>
+              <tr><td class="num">1</td><td>「カード表示に切り替える」へフォーカスを移動して押下する</td><td class="keys"><kbd>Tab</kbd> → <kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
+              <tr><td class="num">2</td><td>差し替え後の領域を読ませて記録する（「カード表示」）</td><td class="keys"><kbd>VO</kbd> + <kbd>→</kbd></td></tr>
+              <tr><td class="num">3</td><td>「一覧表示に切り替える」を押下する</td><td class="keys"><kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
+              <tr><td class="num">4</td><td>戻した後の領域を読ませて記録する（「一覧表示」）</td><td class="keys"><kbd>VO</kbd> + <kbd>→</kbd></td></tr>
             </tbody>
           </table>
         </div>
-        <p class="why"><strong>見るべき点：</strong>手順4で「内訳」と読まれたら、古い名前が残っている。
+        <p class="why"><strong>見るべき点：</strong>手順4で「カード表示」と読まれたら、古い名前が残っている。
         E2E では属性値が正しく入れ替わる（<code>aria-describedby</code> が付いて消える）ことを
         確認済みなので、そこで差が出れば原因は <strong>支援技術側のキャッシュ</strong>であって DOM ではない。</p>
         <label class="check"><input type="checkbox"><span>classic / vapor 両方で記録した</span></label>

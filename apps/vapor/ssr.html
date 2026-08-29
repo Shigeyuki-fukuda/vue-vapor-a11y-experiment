@@ -8,5 +8,5 @@
        ssr-teleports が body の**先頭**にあるのは、Vue の Teleport が hydration
        時に移動先の firstChild からマーカーを探すため。ここより前に要素を置くと、
        その要素が Teleport の中身として取り込まれて消える。 -->
-  <body><!--ssr-teleports--><div id="app"><!--ssr-outlet--></div><script type="module" src="/src/main-ssr.js"></script></body>
+  <body><!--ssr-teleports--><div class="lane-banner" data-lane="vapor" aria-hidden="true">vapor / ssr</div><div id="app"><!--ssr-outlet--></div><script type="module" src="/src/main-ssr.js"></script></body>
 </html>

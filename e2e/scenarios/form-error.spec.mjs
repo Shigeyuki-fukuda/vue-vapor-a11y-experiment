@@ -33,8 +33,15 @@ for (const t of targets) {
     await submit.click()
     await expect(alert).toBeVisible()
     await expect(field).toHaveAttribute('aria-describedby', 'email-error')
+    // 送信失敗時にフォーカスが不正な入力欄へ移ること。
+    // role=alert はエラー文をその場で読むだけで、フォーカスは「送信」に
+    // 残る。移していないとキーボード利用者はどこを直すか分からない
+    await expect(field).toBeFocused()
     const invalid = await page.locator('#app').ariaSnapshot()
     const invalidAttrs = await snapshotAttributes(field, FIELD_ATTRIBUTES)
+    // フォーカス位置は ariaSnapshot に出ないため別時点として保存する。
+    // 入力欄が「エラーと紐付いた状態」でフォーカスされていることを記録する
+    const focusInvalid = await page.locator(':focus').ariaSnapshot()
 
     // ③ 正しい値に直す → エラー解除の確定を待ってから取得
     await field.fill('user@example.com')
@@ -47,6 +54,7 @@ for (const t of targets) {
       pristine,
       invalid,
       recovered,
+      'focus-invalid': focusInvalid,
       'pristine-attrs': pristineAttrs,
       'invalid-attrs': invalidAttrs,
       'recovered-attrs': recoveredAttrs,

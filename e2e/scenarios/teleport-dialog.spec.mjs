@@ -40,10 +40,29 @@ for (const t of targets) {
     // フォーカスは body に残り、この時点が classic と食い違う
     const focusOpened = await page.locator(':focus').ariaSnapshot()
 
-    // ③ 閉じる — フォーカスが開くボタンへ戻る
+    // ③ Tab がダイアログの外へ出ないこと。
+    //
+    // トラップは dialogRef 越しに要素を探すので、ref が移動後の要素を
+    // 指していなければ無言で効かなくなる。項目2 (FocusDialog) と同じ
+    // assert を置くことで、両者の違いを Teleport の有無だけに保つ。
+    await page.keyboard.press('Tab')
+    await expect(closer).toBeFocused()
+    await page.keyboard.press('Tab')
+    await expect(closer).toBeFocused()
+    const focusTrapped = await page.locator(':focus').ariaSnapshot()
+
+    // ④ 閉じる — フォーカスが開くボタンへ戻る
     await closer.click()
     await expect(dialog).toHaveCount(0)
     const focusClosed = await page.locator(':focus').ariaSnapshot()
+
+    // ⑤ Escape でも閉じられること。body 直下へ移った要素で keydown を
+    // 拾えているかの確認でもある
+    await opener.click()
+    await expect(dialog).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(dialog).toHaveCount(0)
+    await expect(opener).toBeFocused()
 
     saveSnapshot(t.name, 'teleport-dialog', {
       closed,
@@ -51,6 +70,7 @@ for (const t of targets) {
       'opened-app': openedApp,
       'opened-attrs': openedAttrs,
       'focus-opened': focusOpened,
+      'focus-trapped': focusTrapped,
       'focus-closed': focusClosed,
     })
   })

@@ -1,5 +1,8 @@
 <!DOCTYPE html>
 <html lang="ja">
   <head><meta charset="UTF-8"><title>vapor</title></head>
-  <body><div id="app"></div><script type="module" src="/src/main.js"></script></body>
+  <!-- lane 帯は #app の外に置き aria-hidden を付ける。teleport-dialog の
+       シナリオが body 全体を ariaSnapshot しているため、ツリーに乗る位置へ
+       足すと lane 間の恒常的な差分になる。スタイルは source/components/App.vue -->
+  <body><div class="lane-banner" data-lane="vapor" aria-hidden="true">vapor</div><div id="app"></div><script type="module" src="/src/main.js"></script></body>
 </html>

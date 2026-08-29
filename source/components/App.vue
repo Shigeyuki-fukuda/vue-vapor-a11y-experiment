@@ -26,3 +26,360 @@ import DynamicPanel from './components/DynamicPanel.vue'
     <DynamicPanel />
   </main>
 </template>
+
+<!--
+  このアプリのスタイルはここに集約する。
+
+  `scoped` は付けない。scoped にすると全要素へ data-v-* が付与され、
+  スコープ id の当て方が lane 間でずれた場合、それが検証対象と無関係な
+  差分として出てしまう (理由は TransitionAlert.vue のコメントと同じ)。
+
+  アクセシビリティツリーを変えない範囲に限る。具体的には、
+  - `display: none` / `visibility: hidden` を新たに当てない
+    (v-show が使うインラインの display は上書きしない)
+  - `content` で文字を生成しない (アクセシブルネームに混ざる)
+  この2つを守っている限り、見た目を変えても ariaSnapshot は動かない。
+
+  `.lane-banner` の要素は apps/{lane}/index.html と ssr.html にあり、
+  ここには無い。スタイルだけをこちらに置いているのは、4つある HTML の
+  シェルへ CSS を書き写すと lane 間で食い違う余地ができるため。
+-->
+<style>
+:root {
+  color-scheme: light;
+
+  --paper: #f7f5f0;
+  --surface: #ffffff;
+  --ink: #14161a;
+  --muted: #5a616e;
+  --rule: #d8d3c7;
+  --focus: #0b57d0;
+  --danger: #a3231b;
+  --lane-classic: #2f5fd0;
+  --lane-vapor: #a75a00;
+
+  --space: clamp(1rem, 0.6rem + 1.2vw, 1.75rem);
+  --radius: 10px;
+  --banner-height: 2.5rem;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  /* 上端は固定表示の lane 帯が占める。その分を空けておく */
+  padding: calc(var(--banner-height) + var(--space)) var(--space) calc(var(--space) * 3);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  font-size: clamp(1rem, 0.95rem + 0.3vw, 1.125rem);
+  line-height: 1.7;
+}
+
+/*
+  どちらの lane を見ているかの表示。
+
+  色だけで区別すると録画の圧縮や色覚特性で失われるため、vapor 側は
+  斜線のテクスチャでも区別できるようにしてある。
+*/
+.lane-banner {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 100;
+  height: var(--banner-height);
+  display: flex;
+  align-items: center;
+  padding-inline: var(--space);
+  font: 700 0.95rem/1 var(--mono);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--lane-classic);
+}
+
+.lane-banner[data-lane='vapor'] {
+  background: repeating-linear-gradient(135deg, var(--lane-vapor) 0 14px, #8f4d00 14px 28px);
+}
+
+main {
+  max-width: 60rem;
+  margin: 0 auto;
+  display: grid;
+  gap: var(--space);
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(1.5rem, 1.1rem + 1.6vw, 2.25rem);
+  letter-spacing: -0.01em;
+}
+
+main > section {
+  display: grid;
+  justify-items: start;
+  gap: 0.75rem;
+  padding: var(--space);
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+
+main > section > h2 {
+  width: 100%;
+  margin: 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--rule);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+main > section > p {
+  margin: 0;
+  color: var(--muted);
+}
+
+button {
+  padding: 0.45em 1.1em;
+  font: inherit;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1.5px solid var(--ink);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #ecebe5;
+}
+
+input {
+  min-width: min(24rem, 100%);
+  padding: 0.45em 0.6em;
+  font: inherit;
+  color: inherit;
+  background: var(--surface);
+  border: 1.5px solid var(--rule);
+  border-radius: 6px;
+}
+
+input[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+
+/*
+  form は section の grid の外側なので、中の要素は間隔を持たない。
+  ラベル・入力欄・エラー文・ボタンが詰まって見えるのを防ぐ。
+*/
+form {
+  display: grid;
+  justify-items: start;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+form button[type='submit'] {
+  margin-top: 0.5rem;
+}
+
+/* 親が持つラベルと、子のスロットへ流し込まれる注記 */
+.field {
+  width: 100%;
+}
+
+.field-label {
+  font-weight: 600;
+}
+
+.field-hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.9em;
+  color: var(--muted);
+}
+
+/* フォーカスリングはこの実験の観察対象そのものなので、既定より太く取る */
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+[role='alert'] {
+  margin: 0;
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/*
+  トーストの器。一般的な通知に合わせて画面上部の中央へ固定する。
+  **DOM 上の位置はセクションの中のままなので ariaSnapshot は変わらない。**
+  pointer-events を切ってあるのは、通知が背後の操作を邪魔しないため。
+*/
+.toast-region {
+  position: fixed;
+  top: calc(var(--banner-height) + 0.75rem);
+  right: var(--space);
+  z-index: 70;
+  display: grid;
+  justify-items: end;
+  gap: 0.5rem;
+  max-width: calc(100vw - 2 * var(--space));
+  pointer-events: none;
+}
+
+.toast {
+  margin: 0;
+  padding: 0.7em 1.4em;
+  color: #f3f7f4;
+  font-weight: 600;
+  background: #1b2430;
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgb(20 22 26 / 0.28);
+  animation: toast-in 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}
+
+/*
+  list-style: none を当てても listbox の意味は失われない。role を明示して
+  いるため。同じ理由で .file-list / .file-cards には role="list" を付けてある。
+  Safari は list-style を消した ul をリストとして読まなくなることがある。
+*/
+ul[role='listbox'] {
+  display: grid;
+  gap: 0.25rem;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+li[role='option'] {
+  padding: 0.4em 0.75em;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+li[role='option'][aria-selected='true'] {
+  font-weight: 700;
+  background: #eaeff9;
+  border-color: var(--ink);
+}
+
+[role='region'] {
+  width: 100%;
+  padding-left: 0.9rem;
+  border-left: 3px solid var(--rule);
+}
+
+/* :is で差し替わる2つのビュー。枠を共通にしてあるので、切り替えで
+   変わるのは中身だけに見える */
+.view-note {
+  margin: 0 0 0.75rem;
+  font-size: 0.9em;
+  color: var(--muted);
+}
+
+.file-list,
+.file-cards {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.file-list {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.file-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.55em 0.7em;
+  border-bottom: 1px solid var(--rule);
+}
+
+.file-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 0.75rem;
+}
+
+.file-cards li {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.9em;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+}
+
+.file-title {
+  font-weight: 600;
+}
+
+.file-note {
+  font-size: 0.85em;
+  color: var(--muted);
+}
+
+/* 背後のクリックを遮る幕。aria-hidden なのでツリーには出ない */
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgb(20 22 26 / 0.55);
+}
+
+[role='dialog'] {
+  position: fixed;
+  z-index: 60;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: grid;
+  justify-items: start;
+  gap: 0.9rem;
+  width: min(28rem, calc(100vw - 2 * var(--space)));
+  padding: calc(var(--space) * 1.1);
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  box-shadow: 0 24px 60px rgb(20 22 26 / 0.28);
+}
+
+[role='dialog'] h3 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+/*
+  ダイアログ自身は tabindex="-1" でプログラム的にフォーカスされる。
+  :focus-visible が当たらないブラウザがあるため :focus でも描く。
+*/
+[role='dialog']:focus {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+</style>
