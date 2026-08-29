@@ -281,9 +281,13 @@ form button[type='submit'] {
   margin-top: 0.5rem;
 }
 
-/* 親が持つラベルと、子のスロットへ流し込まれる注記 */
+/*
+  入力欄と、子のスロットへ流し込まれるカウンタを包む。
+  入力欄の幅に合わせて絞ってあるのは、カウンタの右端を入力欄の右端へ
+  揃えるため。100% のままだとカウンタだけがセクションの右端まで飛ぶ。
+*/
 .field {
-  width: 100%;
+  width: min(24rem, 100%);
 }
 
 .field-label {
@@ -294,6 +298,19 @@ form button[type='submit'] {
   margin: 0.4rem 0 0;
   font-size: 0.9em;
   color: var(--muted);
+}
+
+/*
+  文字数カウンタ。入力欄の右下に置く一般的な形にする。
+  tabular-nums は桁が変わっても数字の幅を揃えるため。無いと入力のたびに
+  カウンタが左右へ動いて、視線が持っていかれる。
+*/
+.field-counter {
+  margin: 0.35rem 0 0;
+  font-size: 0.9em;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  text-align: right;
 }
 
 /* フォーカスリングはこの実験の観察対象そのものなので、既定より太く取る */

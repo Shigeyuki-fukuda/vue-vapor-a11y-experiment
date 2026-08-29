@@ -1,0 +1,49 @@
+- main:
+  - heading "Vue Vapor A11y Experiment" [level=1]
+  - 'region "Live Region: トースト通知"':
+    - 'heading "Live Region: トースト通知" [level=2]'
+    - button "通知を表示"
+    - status
+  - 'region "フォーカス管理: モーダルダイアログ"':
+    - 'heading "フォーカス管理: モーダルダイアログ" [level=2]'
+    - button "設定を開く"
+  - 'region "動的 aria 属性: 開閉パネル"':
+    - 'heading "動的 aria 属性: 開閉パネル" [level=2]'
+    - button "Vapor モードとは何ですか？"
+  - 'region "フォームエラー: 入力検証"':
+    - 'heading "フォームエラー: 入力検証" [level=2]'
+    - text: メールアドレス
+    - textbox "メールアドレス"
+    - button "送信"
+  - 'region "条件付き描画: v-if と v-show"':
+    - 'heading "条件付き描画: v-if と v-show" [level=2]'
+    - checkbox "入力のヒントを表示する"
+    - text: 入力のヒントを表示する
+  - 'region "リスト描画: キー付き v-for の再利用"':
+    - 'heading "リスト描画: キー付き v-for の再利用" [level=2]'
+    - button "先頭を末尾へ"
+    - button "先頭を削除"
+    - 'listbox "リスト描画: キー付き v-for の再利用"':
+      - option "Vapor Mode" [selected]
+      - option "Virtual DOM"
+      - option "Hydration"
+  - region "props / slots によるコンポーネント合成":
+    - heading "props / slots によるコンポーネント合成" [level=2]
+    - text: 表示名
+    - textbox "表示名": さくら
+    - paragraph: 3 / 32
+  - 'region "Teleport: body 直下へ移すダイアログ"':
+    - 'heading "Teleport: body 直下へ移すダイアログ" [level=2]'
+    - button "通知パネルを開く"
+  - 'region "Transition: leave 中のツリー"':
+    - 'heading "Transition: leave 中のツリー" [level=2]'
+    - button "保存する"
+  - 'region "動的コンポーネント: :is による差し替え"':
+    - 'heading "動的コンポーネント: :is による差し替え" [level=2]'
+    - button "年払いに切り替える"
+    - region "月払い":
+      - heading "月払い" [level=3]
+      - list:
+        - listitem: フリー ¥0
+        - listitem: スタンダード ¥1,200 / 月
+        - listitem: ビジネス ¥3,800 / 月

@@ -15,12 +15,29 @@
 defineProps<{
   labelId: string
   descriptionId: string
+  maxLength: number
 }>()
+
+/**
+ * 入力値は親が持つ。
+ *
+ * 注記 (aria-describedby の参照先) は親のスロットにあり、入力に追随して
+ * 残り文字数を出す。そのため値は子から親へ戻る必要があり、props で降ろした
+ * id とは逆向きに境界を越える。**参照先の文字列が書き換わり続けても
+ * 関連付けが保たれるか**が、静的な描画だけでは見えない観測点になる。
+ */
+const value = defineModel<string>({ required: true })
 </script>
 
 <template>
   <div class="field">
-    <input type="text" :aria-labelledby="labelId" :aria-describedby="descriptionId" />
+    <input
+      v-model="value"
+      type="text"
+      :maxlength="maxLength"
+      :aria-labelledby="labelId"
+      :aria-describedby="descriptionId"
+    />
     <!--
       スロットの中身は親が書くが、描画位置はこの子が決める。
       「親の要素が子の指定した位置へ入る」経路も同時に観測できる。
