@@ -52,8 +52,8 @@ for (const t of targets) {
     // hydration の完了を待つ。サーバの HTML にイベントは載っていないので、
     // 押して反応があればクライアント側の処理が繋がったと判断できる。
     // ここが動かなければ hydration そのものが失敗している
-    const toggle = page.getByRole('button', { name: '補足を切り替え' })
-    const ifBlock = page.getByText('v-if で出し入れされる補足')
+    const toggle = page.getByRole('checkbox', { name: '入力のヒントを表示する' })
+    const ifBlock = page.getByText('ユーザー ID は半角英数字で入力してください。')
     await toggle.click()
     await expect(ifBlock).toBeVisible()
     await toggle.click()

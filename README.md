@@ -532,7 +532,7 @@ vapor 側:   VaporComponent
             template("<div role=dialog aria-modal=true aria-la
             template("<main><h1>Vue Vapor A11y Experiment
             template("<p id=email-error role=alert> メールアドレスの形式
-            template("<p>v-if で出し入れされる補足
+            template("<p class=field-hint> ユーザー ID は半角英数字
             template("<section aria-labelledby=conditional-hea
             template("<section aria-labelledby=disclosure-head
             template("<section aria-labelledby=focus-heading><
@@ -566,7 +566,7 @@ classic と vapor のアクセシビリティツリーが完全一致 (差分 0 
   - heading "Vue Vapor A11y Experiment" [level=1]
   - 'region "Live Region: トースト通知"':
     - 'heading "Live Region: トースト通知" [level=2]'
-    - button "保存"
+    - button "通知を表示"
     - status:
       - paragraph: 通知が届きました
   - 'region "フォーカス管理: モーダルダイアログ"':
@@ -577,8 +577,8 @@ classic と vapor のアクセシビリティツリーが完全一致 (差分 0 
       - button "閉じる"
   - 'region "動的 aria 属性: 開閉パネル"':
     - 'heading "動的 aria 属性: 開閉パネル" [level=2]'
-    - button "コンパイル結果の詳細" [expanded]
-    - paragraph: Vapor Mode は VDOM を経由せず DOM を直接更新する。
+    - button "Vapor モードとは何ですか？" [expanded]
+    - paragraph: 仮想 DOM を経由せず DOM を直接更新する描画方式です。差分計算が無いぶん、画面の更新が速くなります。
   - 'region "フォームエラー: 入力検証"':
     - 'heading "フォームエラー: 入力検証" [level=2]'
     - text: メールアドレス
@@ -644,7 +644,7 @@ focus-management.opened-attrs:
 - 表示設定閉じる: aria-modal=true aria-labelledby=focus-dialog-heading tabindex=-1
 
 dynamic-aria.expanded-attrs:
-- コンパイル結果の詳細: aria-expanded=true aria-controls=disclosure-panel
+- Vapor モードとは何ですか？: aria-expanded=true aria-controls=disclosure-panel
 
 form-error.invalid-attrs:
 - email-field: aria-invalid=true aria-describedby=email-error

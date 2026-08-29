@@ -156,6 +156,57 @@ button:hover {
   background: #ecebe5;
 }
 
+/*
+  よくある質問の行。質問文の左、開閉の印を右端に置いて、
+  行そのものが押せることが見て分かる形にする。
+*/
+.disclosure-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  padding: 0.8em 1em;
+  text-align: left;
+  border-color: var(--rule);
+  border-radius: var(--radius);
+}
+
+/*
+  開閉の印。閉じているときは下向き、開いたら上向きに返す。
+  文字ではなく境界線で三角を描いているのは、::before の content が
+  アクセシブルネームへ混ざるのを避けるため。
+*/
+.disclosure-marker {
+  flex: none;
+  width: 0;
+  height: 0;
+  border-right: 0.35rem solid transparent;
+  border-left: 0.35rem solid transparent;
+  border-top: 0.45rem solid var(--muted);
+  transition: transform 180ms ease;
+}
+
+.disclosure-toggle[aria-expanded='true'] .disclosure-marker {
+  transform: rotate(180deg);
+}
+
+.disclosure-panel {
+  padding: 0 1em;
+}
+
+.disclosure-panel > p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .disclosure-marker {
+    transition: none;
+  }
+}
+
 input {
   min-width: min(24rem, 100%);
   padding: 0.45em 0.6em;
@@ -164,6 +215,31 @@ input {
   background: var(--surface);
   border: 1.5px solid var(--rule);
   border-radius: 6px;
+}
+
+/*
+  上の input の既定はテキスト入力向け。min-width と枠線がチェックボックスにも
+  当たると、四角が入力欄の幅まで伸びて別物に見える。この形だけ打ち消す。
+*/
+input[type='checkbox'] {
+  width: 1.1rem;
+  height: 1.1rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  accent-color: var(--focus);
+}
+
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ラベルの文字を押しても切り替わることが分かるようにする */
+.checkbox-field label {
+  cursor: pointer;
 }
 
 input[aria-invalid='true'] {
@@ -220,10 +296,16 @@ form button[type='submit'] {
 .toast-region {
   position: fixed;
   top: calc(var(--banner-height) + 0.75rem);
-  right: var(--space);
+  /*
+    器そのものを画面の中央へ寄せる。器は中身の幅しか持たないので、
+    left: 50% と -50% の平行移動で画面幅に依らず中央に来る。
+    入場アニメーションは .toast 側に当たっているため、この transform とは衝突しない。
+  */
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 70;
   display: grid;
-  justify-items: end;
+  justify-items: center;
   gap: 0.5rem;
   max-width: calc(100vw - 2 * var(--space));
   pointer-events: none;

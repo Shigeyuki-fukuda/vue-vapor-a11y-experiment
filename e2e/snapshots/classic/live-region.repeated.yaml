@@ -11,7 +11,7 @@
     - button "設定を開く"
   - 'region "動的 aria 属性: 開閉パネル"':
     - 'heading "動的 aria 属性: 開閉パネル" [level=2]'
-    - button "コンパイル結果の詳細"
+    - button "Vapor モードとは何ですか？"
   - 'region "フォームエラー: 入力検証"':
     - 'heading "フォームエラー: 入力検証" [level=2]'
     - text: メールアドレス
@@ -19,7 +19,8 @@
     - button "送信"
   - 'region "条件付き描画: v-if と v-show"':
     - 'heading "条件付き描画: v-if と v-show" [level=2]'
-    - button "補足を切り替え"
+    - checkbox "入力のヒントを表示する"
+    - text: 入力のヒントを表示する
   - 'region "リスト描画: キー付き v-for の再利用"':
     - 'heading "リスト描画: キー付き v-for の再利用" [level=2]'
     - button "先頭を末尾へ"
