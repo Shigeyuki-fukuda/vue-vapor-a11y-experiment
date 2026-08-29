@@ -560,12 +560,13 @@ synced -&gt; apps/vapor/src (14 files)
           <code>build:ssr</code>（両 lane の <code>entry-server.js</code>）→
           <code>prerender</code> の4段。最後の <code>prerender</code> が
           <code>renderToString</code> の出力を <code>ssr.html</code> の
-          <code>&lt;!--ssr-outlet--&gt;</code> に差し込み、<strong>両 lane の HTML が
+          <code>&lt;!--ssr-outlet--&gt;</code> と、Teleport の中身を
+          <code>&lt;!--ssr-teleports--&gt;</code> に差し込み、<strong>両 lane の HTML が
           バイト単位で同一かをその場でハッシュ照合する</strong>。</p>
-          <pre><code>| lane | HTML の長さ | sha256 (先頭12) |
-|---|---|---|
-| classic | 2630 | f25b4515ae73 |
-| vapor | 2630 | f25b4515ae73 |
+          <pre><code>| lane | HTML の長さ | teleports の長さ | sha256 (先頭12) |
+|---|---|---|---|
+| classic | 2630 | 57 | 167c9245a7c9 |
+| vapor | 2630 | 57 | 167c9245a7c9 |
 
 ✅ サーバ描画の HTML は全 lane で同一 (hydration 前の入力が揃っている)</code></pre>
           <p>ここが食い違ったら止める。hydration 前の入力が揃っていない状態で
@@ -1215,11 +1216,12 @@ vapor   → http://localhost:4174/ssr.html</code></pre>
           通していない（<code>ssr.html</code> はプリレンダで生成される）。</p>
         </div>
         <div class="callout">
-          <span class="label">警告が出るのは既知（Vapor 起因ではない）</span>
-          <p><code>v-model</code> 由来の <code>Hydration completed but contains mismatches.</code> が
-          <strong>両 lane で等しく</strong>出る。サーバは <code>value=""</code> を属性として出すが、
-          クライアントの <code>v-model</code> は DOM プロパティを設定するため属性が付かない。
-          詳細は <a href="../README.md">README</a> の「SSR / hydration」。</p>
+          <span class="label">hydration の警告は現在 0 件</span>
+          <p>以前は <code>Hydration completed but contains mismatches.</code> が両 lane で出ており、
+          README はこれを <code>v-model</code> のせいだと説明していた。<strong>実際の原因は
+          <code>&lt;Teleport to="body"&gt;</code> の中身を <code>ssr.html</code> へ注入していなかったこと</strong>で、
+          <code>prerender</code> を直したところ警告は 0 件になった。ここで警告が出たら
+          それは新しい事象なので、無視せず記録する。詳細は <a href="../README.md">README</a> の「SSR / hydration」。</p>
         </div>
         <label class="check"><input type="checkbox"><span>classic / vapor 両方で記録した</span></label>
       </article>
@@ -1322,8 +1324,8 @@ vapor   → http://localhost:4174/ssr.html</code></pre>
           </tr>
           <tr>
             <td>SSR シナリオで <code>Hydration completed but contains mismatches.</code> が出る</td>
-            <td><code>v-model</code> の初期値による既知の mismatch（<strong>両 lane 共通</strong>）</td>
-            <td>Vapor 起因ではないので無視してよい。警告はスナップショットの一時点として保存され、lane 間で差が出たときだけ落ちる</td>
+            <td>現在は 0 件が正常。出たなら新しい事象で、Teleport の注入漏れと同種の「静かに壊れる」経路の可能性がある</td>
+            <td>無視しない。警告はスナップショットの一時点として保存されるので、コミット済みの内容と変わったことを CI のドリフト検査が拾う</td>
           </tr>
         </tbody>
       </table>

@@ -268,8 +268,9 @@ vapor   → http://localhost:4174/ssr.html
 
 > E2E では hydration の前後でツリーが変化しないことを確認済み
 > (`ssr-hydration.server.yaml` と `ssr-hydration.hydrated.yaml` が同一)。
-> `v-model` 由来の hydration mismatch 警告が両 lane で等しく出るが、
-> これは Vapor 起因ではない (README「SSR / hydration」)。
+> hydration mismatch 警告は両 lane とも 0 件
+> (`ssr-hydration.warnings.yaml` が `(警告なし)`)。
+> 以前は Teleport の注入漏れで警告が出ていた (README「SSR / hydration」)。
 
 ## 記録先
 

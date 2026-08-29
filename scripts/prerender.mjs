@@ -18,6 +18,18 @@ import { LANE_NAMES } from './lanes.mjs'
  */
 const OUTLET = '<!--ssr-outlet-->'
 
+/**
+ * `<Teleport to="body">` の中身を差し込む位置。
+ *
+ * Teleport の描画結果は本体の HTML に含まれず `context.teleports.body` に
+ * 溜まる。ここを埋め忘れると、移動先 (body) にマーカーが無いまま hydration が
+ * 始まり、クライアントは body の先頭から順にノードを Teleport の中身として
+ * 取り込む。**実測では `#app` と `<script>` が丸ごと消えてページが白紙になり、
+ * それでも例外は出ず「Hydration completed but contains mismatches」しか
+ * 残らなかった。** 静かに壊れる経路なので、下で存在と非空を検査している。
+ */
+const TELEPORT_OUTLET = '<!--ssr-teleports-->'
+
 const sha = (text) => createHash('sha256').update(text).digest('hex').slice(0, 12)
 
 async function renderLane(lane) {
@@ -26,31 +38,55 @@ async function renderLane(lane) {
     throw new Error(`${bundle} がありません。先に \`pnpm run build:ssr\` を実行してください`)
   }
   const { render } = await import(pathToFileURL(bundle).href)
-  const html = await render()
-  if (!html.trim()) {
-    throw new Error(`${lane} の render() が空文字を返しました`)
+  const result = await render()
+
+  if (!result?.html?.trim()) {
+    throw new Error(`${lane} の render() が空の HTML を返しました`)
   }
-  return html
+
+  const teleports = result.teleports?.body ?? ''
+  // アプリには Teleport が1つあるので、空になるのは entry-server が context を
+  // 渡し忘れたか、Teleport 自体が消えたときだけ。どちらも黙って通すと
+  // 上のコメントに書いた壊れ方に直行する。
+  if (!teleports.trim()) {
+    throw new Error(
+      `${lane} の render() が body 向けの teleports を返しませんでした。` +
+        `apps/${lane}/src/entry-server.js が renderToString に context を渡しているか、` +
+        `アプリから Teleport が消えていないかを確認してください`
+    )
+  }
+
+  return { html: result.html, teleports }
 }
 
 /** 描画結果を ssr.html へ差し込む。差し込めなければ失敗させる */
-function inject(lane, html) {
+function inject(lane, rendered) {
   const page = join('apps', lane, 'dist', 'ssr.html')
   if (!existsSync(page)) {
     throw new Error(`${page} がありません。先に \`pnpm run build:${lane}\` を実行してください`)
   }
-  const template = readFileSync(page, 'utf8')
+
+  let template = readFileSync(page, 'utf8')
 
   // 置換に失敗したまま preview されると #app が空になり、hydration ではなく
   // 通常のクライアント描画になる。それでも E2E は通り差分 0 件が出てしまうため、
   // 「検証したい経路を通っていない」ことをここで止める。
-  if (!template.includes(OUTLET)) {
-    throw new Error(
-      `${page} に ${OUTLET} がありません。既に prerender 済みか、テンプレートが変わっています`
-    )
+  const replacements = [
+    [OUTLET, rendered.html],
+    [TELEPORT_OUTLET, rendered.teleports],
+  ]
+  for (const [placeholder, value] of replacements) {
+    if (!template.includes(placeholder)) {
+      throw new Error(
+        `${page} に ${placeholder} がありません。既に prerender 済みか、テンプレートが変わっています`
+      )
+    }
+    // 置換文字列は関数で渡す。描画結果に `$&` などが含まれると、
+    // 文字列指定では置換パターンとして解釈されてしまう
+    template = template.replace(placeholder, () => value)
   }
 
-  writeFileSync(page, template.replace(OUTLET, html))
+  writeFileSync(page, template)
   return page
 }
 
@@ -78,13 +114,15 @@ async function main() {
     rendered[lane] = await renderLane(lane)
   }
 
-  const hashes = targets.map((lane) => [lane, sha(rendered[lane])])
-  const unique = new Set(hashes.map(([, hash]) => hash))
+  // 本体と teleports の両方を一致の対象にする。片方だけ見ていると、
+  // 差し込み先が2箇所あることを忘れた変更が無検査で通る
+  const digest = (r) => sha(`${r.html} ${r.teleports}`)
+  const rows = targets.map((lane) => [lane, rendered[lane], digest(rendered[lane])])
 
-  console.log('| lane | HTML の長さ | sha256 (先頭12) |')
-  console.log('|---|---|---|')
-  for (const [lane, hash] of hashes) {
-    console.log(`| ${lane} | ${rendered[lane].length} | ${hash} |`)
+  console.log('| lane | HTML の長さ | teleports の長さ | sha256 (先頭12) |')
+  console.log('|---|---|---|---|')
+  for (const [lane, r, hash] of rows) {
+    console.log(`| ${lane} | ${r.html.length} | ${r.teleports.length} | ${hash} |`)
   }
   console.log('')
 
@@ -99,6 +137,7 @@ async function main() {
     return
   }
 
+  const unique = new Set(rows.map(([, , hash]) => hash))
   if (unique.size !== 1) {
     console.error(
       '❌ lane ごとにサーバ描画の HTML が違います。' +
