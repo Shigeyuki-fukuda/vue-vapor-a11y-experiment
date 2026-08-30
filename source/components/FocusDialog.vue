@@ -104,7 +104,15 @@ function onKeydown(event: KeyboardEvent) {
       tabindex="-1"
       @keydown="onKeydown"
     >
-      <h3 id="focus-dialog-heading">表示設定</h3>
+      <h3 id="focus-dialog-heading">設定</h3>
+      <!--
+        中身は文言だけにしてある。操作できる要素を足すとフォーカストラップの
+        観測対象が変わる。E2E の focus-trapped は「Tab を2回押しても閉じるに
+        留まる」ことを見ており、ダイアログ内の到達可能な要素が増えると
+        その assert が別の意味になってしまう。
+      -->
+      <p>アカウントと通知に関する設定をここにまとめます。</p>
+      <p>変更は自動的に保存されます。</p>
       <button type="button" @click="close">閉じる</button>
     </div>
   </section>

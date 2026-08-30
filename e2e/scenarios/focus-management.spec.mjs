@@ -7,7 +7,7 @@ const targets = [
 ]
 
 /**
- * ariaSnapshot は開いたダイアログを `dialog "表示設定"` として出すが、
+ * ariaSnapshot は開いたダイアログを `dialog "設定"` として出すが、
  * **aria-modal は出力に現れない**。「モーダルであること」自体が比較対象から
  * 抜け落ちるため、属性を別時点として保存する。
  */

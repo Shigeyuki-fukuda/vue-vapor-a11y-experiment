@@ -572,8 +572,10 @@ classic と vapor のアクセシビリティツリーが完全一致 (差分 0 
   - 'region "フォーカス管理: モーダルダイアログ"':
     - 'heading "フォーカス管理: モーダルダイアログ" [level=2]'
     - button "設定を開く"
-    - dialog "表示設定":
-      - heading "表示設定" [level=3]
+    - dialog "設定":
+      - heading "設定" [level=3]
+      - paragraph: アカウントと通知に関する設定をここにまとめます。
+      - paragraph: 変更は自動的に保存されます。
       - button "閉じる"
   - 'region "動的 aria 属性: 開閉パネル"':
     - 'heading "動的 aria 属性: 開閉パネル" [level=2]'
@@ -607,10 +609,15 @@ classic と vapor のアクセシビリティツリーが完全一致 (差分 0 
 これも比較対象にしている。
 
 ```
-focus-opened:                    focus-trapped:      focus-closed:
-- dialog "表示設定":               - button "閉じる"    - button "設定を開く"
-  - heading "表示設定" [level=3]
+focus-opened:
+- dialog "設定":
+  - heading "設定" [level=3]
+  - paragraph: アカウントと通知に関する設定をここにまとめます。
+  - paragraph: 変更は自動的に保存されます。
   - button "閉じる"
+
+focus-trapped:        focus-closed:
+- button "閉じる"      - button "設定を開く"
 ```
 
 ダイアログを開くとダイアログ自身へ、閉じると呼び出し元のボタンへフォーカスが
@@ -641,7 +648,7 @@ focus-opened:                    focus-trapped:      focus-closed:
 
 ```
 focus-management.opened-attrs:
-- 表示設定閉じる: aria-modal=true aria-labelledby=focus-dialog-heading tabindex=-1
+- 設定アカウントと通知に関する設定をここにまとめます。変更は自動的に保存されます。閉じる: aria-modal=true aria-labelledby=focus-dialog-heading tabindex=-1
 
 dynamic-aria.expanded-attrs:
 - Vapor モードとは何ですか？: aria-expanded=true aria-controls=disclosure-panel

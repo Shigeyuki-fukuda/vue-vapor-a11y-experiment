@@ -282,6 +282,13 @@ form button[type='submit'] {
   outline-offset: 2px;
 }
 
+/* ダイアログ本文。見出しと閉じるボタンの間に置く文言 */
+[role='dialog'] p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
 [role='alert'] {
   margin: 0;
   color: var(--danger);
