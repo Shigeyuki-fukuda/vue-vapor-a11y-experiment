@@ -333,6 +333,30 @@ form button[type='submit'] {
 }
 
 /*
+  保存に失敗したときのエラーバナー。文言を左、閉じるを右端に置く一般的な形。
+
+  role="alert" が器そのものに付くので、上の色と太さは中の <p> へ継承される。
+  「閉じる」は button 側で色を持っているため影響を受けない。
+  枠線と地色だけに頼らず文字色も danger にしているのは、色を知覚できない
+  環境でも「エラーである」ことが文言から読み取れる状態を保つため。
+*/
+.alert-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  padding: 0.7em 0.9em;
+  background: #fdf3f2;
+  border: 1.5px solid var(--danger);
+  border-radius: 6px;
+}
+
+.alert-banner p {
+  margin: 0;
+}
+
+/*
   トーストの器。一般的な通知に合わせて画面上部の中央へ固定する。
   **DOM 上の位置はセクションの中のままなので ariaSnapshot は変わらない。**
   pointer-events を切ってあるのは、通知が背後の操作を邪魔しないため。

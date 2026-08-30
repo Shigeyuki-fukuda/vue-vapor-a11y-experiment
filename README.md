@@ -206,7 +206,19 @@ CI で再生成されて未追跡のまま残り、**ベースラインが1件�
 **leave の最中、`role=alert` はアクセシビリティツリーに残る。**
 `v-if` が false になっても要素はアニメーション完了まで DOM に留まるためで、
 [transition-alert.leaving](e2e/snapshots/classic/transition-alert.leaving.yaml)
-に `alert: 保存に失敗しました` が記録されている。
+に閉じたはずのエラーがそのまま記録されている。
+
+```yaml
+- alert:
+  - paragraph: 保存に失敗しました
+  - button "閉じる"
+```
+
+残るのは読み上げ文だけではない。**押したはずの「閉じる」も同じ時間ツリーに
+居続け、Tab で到達できる。** エラーバナーの閉じるボタンは押した本人が消える
+形になるため、フォーカスを戻さないと leave の完了と同時に `body` へ落ちる。
+`TransitionAlert` が `dismiss()` でフォーカスを「保存する」へ戻しているのは
+これを避けるためで、E2E も leave 中に戻っていることを確かめている。
 
 これは **classic と vapor の差分ではない** (両系統とも同じ挙動)。
 Vapor の問題ではなく、Transition を使う限り両方で起きる。
@@ -227,6 +239,7 @@ Vapor の問題ではなく、Transition を使う限り両方で起きる。
 | 背後のクリックを遮る幕 (`aria-hidden`) | 同上 |
 | 同じ文言でも2回目が読み上げられる、一定時間で消える | `LiveRegionToast` |
 | 送信失敗時に不正な入力欄へフォーカスを戻す、`type="email"` | `ValidatedForm` |
+| エラーバナーを閉じたとき、消える要素の上にフォーカスを残さない | `TransitionAlert` |
 | モーダルらしい見た目とフォーカスリング | `App.vue` の非 scoped スタイル |
 | エラー中の入力欄でリングが二重にならない | 同上 |
 | classic / vapor を画面で見分ける帯 | `apps/{lane}/index.html`・`ssr.html` |
@@ -444,7 +457,7 @@ apps/vapor/src/components/FocusDialog.vue(16,20): error TS2339: Property 'focusT
 
 ## 検証エビデンス
 
-計測日 2026-08-28 / Node v26.2.0 / pnpm 11.22.0 / vue@3.6.0-rc.3 / vite@8.2.1 /
+計測日 2026-08-30 / Node v26.2.0 / pnpm 11.22.0 / vue@3.6.0-rc.3 / vite@8.2.1 /
 @vitejs/plugin-vue@6.0.8 / @playwright/test@1.62.1 / typescript@5.9.3 / vue-tsc@3.3.11
 
 ### バンドルサイズ
@@ -455,12 +468,12 @@ apps/vapor/src/components/FocusDialog.vue(16,20): error TS2339: Property 'focusT
 
 | 系統 | サイズ | gzip |
 |---|---|---|
-| classic | 91.74 kB | 35.65 kB |
-| vapor | 101.15 kB | 36.48 kB |
+| classic | 97.27 kB | 37.48 kB |
+| vapor | 108.39 kB | 39.09 kB |
 
 **raw でも gzip でも Vapor のほうが大きい。** 6カテゴリ時点では gzip で 19% 小さく、
 10カテゴリでも 3.6% は小さかったが、SSR / hydration を足した時点で
-**gzip でも 2.3% 逆転した**。理由は次節のとおり。
+**gzip でも逆転した**。理由は次節のとおり。
 
 #### Vapor のサイズ優位は「使う機能」で縮む
 
@@ -473,7 +486,12 @@ apps/vapor/src/components/FocusDialog.vue(16,20): error TS2339: Property 'focusT
 | 5カテゴリ | 28.3% | 7.77 kB |
 | 6カテゴリ (`v-for` 追加) | 19.1% | 5.35 kB |
 | 10カテゴリ (合成 / Teleport / Transition / `:is` 追加) | 3.6% | 1.22 kB |
-| 11カテゴリ (SSR / hydration 追加) | **-2.3%** | **-0.83 kB (逆転)** |
+| 11カテゴリ (SSR / hydration 追加) | **-4.3%** | **-1.61 kB (逆転)** |
+
+> 11カテゴリの行だけは現在のソースに対する再計測値で、他の行は
+> そのカテゴリ数だった時点の記録。UI としての作り込み (フォーカス復帰・
+> エラーバナー・見出しの文言) を足したぶん、逆転幅は当初計測の
+> -2.3% / -0.83 kB から広がっている。
 
 **差の絶対値そのものが縮み、最後は符号まで反転している**点が重要。
 アプリコードが等しく積み上がるだけなら比率は縮んでも絶対値は変わらないはずで、
@@ -585,34 +603,34 @@ classic と vapor のアクセシビリティツリーが完全一致 (差分 0 
 ```
 - main:
   - heading "Vue Vapor A11y Experiment" [level=1]
-  - 'region "Live Region: トースト通知"':
-    - 'heading "Live Region: トースト通知" [level=2]'
+  - 'region "Live Region: トースト通知の検証"':
+    - 'heading "Live Region: トースト通知の検証" [level=2]'
     - button "通知を表示"
     - status:
       - paragraph: 通知が届きました
-  - 'region "フォーカス管理: モーダルダイアログ"':
-    - 'heading "フォーカス管理: モーダルダイアログ" [level=2]'
+  - 'region "フォーカス管理: モーダルダイアログの検証"':
+    - 'heading "フォーカス管理: モーダルダイアログの検証" [level=2]'
     - button "設定を開く"
     - dialog "設定":
       - heading "設定" [level=3]
       - paragraph: アカウントと通知に関する設定をここにまとめます。
       - paragraph: 変更は自動的に保存されます。
       - button "閉じる"
-  - 'region "動的 aria 属性: 開閉パネル"':
-    - 'heading "動的 aria 属性: 開閉パネル" [level=2]'
+  - 'region "動的 aria 属性: 開閉パネルの検証"':
+    - 'heading "動的 aria 属性: 開閉パネルの検証" [level=2]'
     - button "Vapor モードとは何ですか？" [expanded]
     - paragraph: 仮想 DOM を経由せず DOM を直接更新する描画方式です。差分計算が無いぶん、画面の更新が速くなります。
-  - 'region "フォームエラー: 入力検証"':
-    - 'heading "フォームエラー: 入力検証" [level=2]'
+  - 'region "フォームエラー: 入力欄との紐付けの検証"':
+    - 'heading "フォームエラー: 入力欄との紐付けの検証" [level=2]'
     - text: メールアドレス
     - textbox "メールアドレス" [invalid]: not-an-email
     - alert: メールアドレスの形式が正しくありません
     - button "送信"
-  - 'region "リスト描画: キー付き v-for の再利用"':
-    - 'heading "リスト描画: キー付き v-for の再利用" [level=2]'
+  - 'region "リスト描画: キー付き v-for の再利用の検証"':
+    - 'heading "リスト描画: キー付き v-for の再利用の検証" [level=2]'
     - button "先頭を末尾へ"
     - button "先頭を削除"
-    - 'listbox "リスト描画: キー付き v-for の再利用"':
+    - 'listbox "リスト描画: キー付き v-for の再利用の検証"':
       - option "Vapor Mode"
       - option "Virtual DOM"
       - option "Hydration" [selected]
