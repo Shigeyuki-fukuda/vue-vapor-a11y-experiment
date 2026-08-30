@@ -23,7 +23,7 @@ const current = computed(() => (isYearly.value ? YearlyPlan : MonthlyPlan))
 
 <template>
   <section aria-labelledby="dynamic-component-heading">
-    <h2 id="dynamic-component-heading">動的コンポーネント: :is による差し替え</h2>
+    <h2 id="dynamic-component-heading">動的コンポーネント: :is による差し替えの検証</h2>
     <button type="button" @click="isYearly = !isYearly">
       {{ isYearly ? '月払いに切り替える' : '年払いに切り替える' }}
     </button>

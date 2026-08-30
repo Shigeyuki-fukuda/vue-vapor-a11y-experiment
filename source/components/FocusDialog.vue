@@ -85,7 +85,7 @@ function onKeydown(event: KeyboardEvent) {
 
 <template>
   <section aria-labelledby="focus-heading">
-    <h2 id="focus-heading">フォーカス管理: モーダルダイアログ</h2>
+    <h2 id="focus-heading">フォーカス管理: モーダルダイアログの検証</h2>
     <button ref="openerRef" type="button" @click="open">設定を開く</button>
 
     <!--

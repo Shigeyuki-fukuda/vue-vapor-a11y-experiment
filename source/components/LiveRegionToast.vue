@@ -53,7 +53,7 @@ onBeforeUnmount(() => {
 
 <template>
   <section aria-labelledby="toast-heading">
-    <h2 id="toast-heading">Live Region: トースト通知</h2>
+    <h2 id="toast-heading">Live Region: トースト通知の検証</h2>
     <button type="button" @click="notify">通知を表示</button>
     <!--
       role=status を持つ器は最初から DOM に置いておく。押した瞬間に器ごと

@@ -17,7 +17,7 @@ const used = computed(() => displayName.value.length)
 
 <template>
   <section aria-labelledby="composed-heading">
-    <h2 id="composed-heading">props / slots によるコンポーネント合成</h2>
+    <h2 id="composed-heading">props / slots によるコンポーネント合成の検証</h2>
 
     <!--
       プロフィール設定の「表示名」欄という体裁にしてある。画面を見た人に

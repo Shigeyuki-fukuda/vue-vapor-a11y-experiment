@@ -38,7 +38,7 @@ async function submit() {
 
 <template>
   <section aria-labelledby="form-heading">
-    <h2 id="form-heading">フォームエラー: 入力検証</h2>
+    <h2 id="form-heading">フォームエラー: 入力欄との紐付けの検証</h2>
     <form novalidate @submit.prevent="submit">
       <label for="email-field">メールアドレス</label>
       <!-- type=email はソフトウェアキーボードの種類とブラウザの補完に効く。

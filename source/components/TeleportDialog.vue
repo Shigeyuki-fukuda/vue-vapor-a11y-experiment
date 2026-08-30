@@ -72,7 +72,7 @@ function onKeydown(event: KeyboardEvent) {
 
 <template>
   <section aria-labelledby="teleport-heading">
-    <h2 id="teleport-heading">Teleport: body 直下へ移すダイアログ</h2>
+    <h2 id="teleport-heading">Teleport: body 直下へ移すダイアログの検証</h2>
     <!--
       文言に既存ボタンの名前を含めない。Playwright の name 照合は部分一致なので、
       「通知設定を開く」にすると FocusDialog の「設定を開く」を狙った

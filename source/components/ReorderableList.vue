@@ -38,7 +38,7 @@ function removeFirst() {
 
 <template>
   <section aria-labelledby="list-heading">
-    <h2 id="list-heading">リスト描画: キー付き v-for の再利用</h2>
+    <h2 id="list-heading">リスト描画: キー付き v-for の再利用の検証</h2>
     <button type="button" @click="rotate">先頭を末尾へ</button>
     <button type="button" @click="removeFirst">先頭を削除</button>
     <!-- APG の listbox は aria-activedescendant でフォーカスを管理するが、

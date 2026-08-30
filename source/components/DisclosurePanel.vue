@@ -10,7 +10,7 @@ function toggle() {
 
 <template>
   <section aria-labelledby="disclosure-heading">
-    <h2 id="disclosure-heading">動的 aria 属性: 開閉パネル</h2>
+    <h2 id="disclosure-heading">動的 aria 属性: 開閉パネルの検証</h2>
     <!--
       よくある質問の1項目という体裁にしてある。disclosure が実際に使われる形へ
       寄せておかないと、読み上げを聞いたときに「この UI なら本来どう読まれるべきか」

@@ -928,7 +928,7 @@ pnpm run preview:vapor     <span class="c"># → localhost:4174</span></code></p
       <article class="step">
         <div class="step-head">
           <span class="step-num">B1</span>
-          <h3>live region: トースト通知</h3>
+          <h3>Live Region: トースト通知の検証</h3>
         </div>
         <div class="table-wrap">
           <table>
@@ -958,7 +958,7 @@ pnpm run preview:vapor     <span class="c"># → localhost:4174</span></code></p
       <article class="step">
         <div class="step-head">
           <span class="step-num">B2</span>
-          <h3>フォーカス管理: モーダルダイアログ</h3>
+          <h3>フォーカス管理: モーダルダイアログの検証</h3>
         </div>
         <div class="table-wrap">
           <table>
@@ -994,7 +994,7 @@ pnpm run preview:vapor     <span class="c"># → localhost:4174</span></code></p
       <article class="step">
         <div class="step-head">
           <span class="step-num">B3</span>
-          <h3>動的 aria 属性: 開閉パネル</h3>
+          <h3>動的 aria 属性: 開閉パネルの検証</h3>
         </div>
         <div class="table-wrap">
           <table>
@@ -1014,7 +1014,7 @@ pnpm run preview:vapor     <span class="c"># → localhost:4174</span></code></p
       <article class="step">
         <div class="step-head">
           <span class="step-num">B4</span>
-          <h3>フォームエラー: 入力検証</h3>
+          <h3>フォームエラー: 入力欄との紐付けの検証</h3>
         </div>
         <div class="table-wrap">
           <table>
@@ -1041,7 +1041,7 @@ pnpm run preview:vapor     <span class="c"># → localhost:4174</span></code></p
       <article class="step">
         <div class="step-head">
           <span class="step-num">B5</span>
-          <h3>条件付き描画: v-if と v-show</h3>
+          <h3>条件付き描画: v-if と v-show の検証</h3>
         </div>
         <div class="table-wrap">
           <table>
@@ -1063,7 +1063,7 @@ pnpm run preview:vapor     <span class="c"># → localhost:4174</span></code></p
       <article class="step">
         <div class="step-head">
           <span class="step-num">B6</span>
-          <h3>リスト描画: キー付き v-for の再利用</h3>
+          <h3>リスト描画: キー付き v-for の再利用の検証</h3>
         </div>
         <p class="why">初期状態では1件目（Vapor Mode）が選択済み。</p>
         <div class="table-wrap">
@@ -1102,7 +1102,7 @@ pnpm run preview:vapor     <span class="c"># → localhost:4174</span></code></p
       <article class="step">
         <div class="step-head">
           <span class="step-num">B7</span>
-          <h3>コンポーネント合成: props / slots</h3>
+          <h3>props / slots によるコンポーネント合成の検証</h3>
         </div>
         <p class="why">入力欄のラベルは親、入力欄本体は子が持ち、両者は props で渡した
         id だけで繋がっている。<strong>ラベルが読まれれば、境界越しの参照が生きている。</strong></p>
@@ -1130,7 +1130,7 @@ pnpm run preview:vapor     <span class="c"># → localhost:4174</span></code></p
       <article class="step">
         <div class="step-head">
           <span class="step-num">B8</span>
-          <h3>Teleport: body 直下へ移すダイアログ</h3>
+          <h3>Teleport: body 直下へ移すダイアログの検証</h3>
         </div>
         <p class="why">操作は B2（フォーカス管理）と同一で、違いはダイアログの描画位置だけ。
         <strong>2つを見比べるのが目的</strong>なので、B2 と同じ詳細度設定で続けて行う。</p>
@@ -1160,7 +1160,7 @@ pnpm run preview:vapor     <span class="c"># → localhost:4174</span></code></p
       <article class="step">
         <div class="step-head">
           <span class="step-num">B9</span>
-          <h3>Transition: leave 中のツリー</h3>
+          <h3>Transition: leave 中のアクセシビリティツリーの検証</h3>
         </div>
         <p class="why">E2E で<strong>leave 中は <code>role=alert</code> がツリーに残る</strong>ことを
         確認済み（classic / vapor 共通）。ここで見たいのは、それが読み上げに乗るか。</p>
@@ -1170,8 +1170,9 @@ pnpm run preview:vapor     <span class="c"># → localhost:4174</span></code></p
             <tbody>
               <tr><td class="num">1</td><td>「保存する」へフォーカスを移動して押下する</td><td class="keys"><kbd>Tab</kbd> → <kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
               <tr><td class="num">2</td><td>エラーの読み上げを記録する</td><td class="keys">（自動読み上げ）</td></tr>
-              <tr><td class="num">3</td><td>同じボタン（「エラーを閉じる」）を押下する</td><td class="keys"><kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
+              <tr><td class="num">3</td><td>エラーバナーの中の「閉じる」へ移動して押下する</td><td class="keys"><kbd>VO</kbd> + <kbd>→</kbd> → <kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
               <tr><td class="num">4</td><td>閉じた直後にエラーが再度読まれないかを記録する</td><td class="keys">（自動読み上げ）</td></tr>
+              <tr><td class="num">5</td><td>押下直後の現在位置を読ませて記録する</td><td class="keys"><kbd>VO</kbd> + <kbd>F4</kbd></td></tr>
             </tbody>
           </table>
         </div>
@@ -1181,13 +1182,19 @@ pnpm run preview:vapor     <span class="c"># → localhost:4174</span></code></p
           ただしこれは両系統で等しく起きるので lane 間の ✕ にはせず、
           Transition を使う設計上の注意点として所見に書く。</p>
         </div>
+        <div class="callout">
+          <span class="label">手順5で「保存する」以外が読まれたら ✕</span>
+          <p>「閉じる」は押した本人が消えるボタンで、leave が終わるまでツリーに残り続ける。
+          <code>TransitionAlert</code> は押した時点でフォーカスを「保存する」へ戻しているので、
+          ここで読まれるのは「保存する」のはず。「閉じる」や無音が読まれたら戻しが効いていない。</p>
+        </div>
         <label class="check"><input type="checkbox"><span>classic / vapor 両方で記録した</span></label>
       </article>
 
       <article class="step">
         <div class="step-head">
           <span class="step-num">B10</span>
-          <h3>動的コンポーネント: :is による差し替え</h3>
+          <h3>動的コンポーネント: :is による差し替えの検証</h3>
         </div>
         <div class="table-wrap">
           <table>
@@ -1209,7 +1216,7 @@ pnpm run preview:vapor     <span class="c"># → localhost:4174</span></code></p
       <article class="step">
         <div class="step-head">
           <span class="step-num">B11</span>
-          <h3>SSR / hydration</h3>
+          <h3>SSR / hydration の検証</h3>
         </div>
         <p class="why">
           <strong>この項目だけ URL が違う。</strong>B1〜B10 は <code>index.html</code>

@@ -6,7 +6,7 @@ const isShown = ref(false)
 
 <template>
   <section aria-labelledby="conditional-heading">
-    <h2 id="conditional-heading">条件付き描画: v-if と v-show</h2>
+    <h2 id="conditional-heading">条件付き描画: v-if と v-show の検証</h2>
     <!--
       設定画面の「説明を表示する」と同じ形にしてある。
 
