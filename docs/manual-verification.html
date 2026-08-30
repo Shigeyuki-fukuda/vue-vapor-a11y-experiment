@@ -1191,14 +1191,14 @@ pnpm run preview:vapor     <span class="c"># → localhost:4174</span></code></p
           <table>
             <thead><tr><th class="num">#</th><th>操作</th><th>キー</th></tr></thead>
             <tbody>
-              <tr><td class="num">1</td><td>「カード表示に切り替える」へフォーカスを移動して押下する</td><td class="keys"><kbd>Tab</kbd> → <kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
-              <tr><td class="num">2</td><td>差し替え後の領域を読ませて記録する（「カード表示」）</td><td class="keys"><kbd>VO</kbd> + <kbd>→</kbd></td></tr>
-              <tr><td class="num">3</td><td>「一覧表示に切り替える」を押下する</td><td class="keys"><kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
-              <tr><td class="num">4</td><td>戻した後の領域を読ませて記録する（「一覧表示」）</td><td class="keys"><kbd>VO</kbd> + <kbd>→</kbd></td></tr>
+              <tr><td class="num">1</td><td>「年払いに切り替える」へフォーカスを移動して押下する</td><td class="keys"><kbd>Tab</kbd> → <kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
+              <tr><td class="num">2</td><td>差し替え後の領域を読ませて記録する（「年払い」）</td><td class="keys"><kbd>VO</kbd> + <kbd>→</kbd></td></tr>
+              <tr><td class="num">3</td><td>「月払いに切り替える」を押下する</td><td class="keys"><kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
+              <tr><td class="num">4</td><td>戻した後の領域を読ませて記録する（「月払い」）</td><td class="keys"><kbd>VO</kbd> + <kbd>→</kbd></td></tr>
             </tbody>
           </table>
         </div>
-        <p class="why"><strong>見るべき点：</strong>手順4で「カード表示」と読まれたら、古い名前が残っている。
+        <p class="why"><strong>見るべき点：</strong>手順4で「年払い」と読まれたら、古い名前が残っている。
         E2E では属性値が正しく入れ替わる（<code>aria-describedby</code> が付いて消える）ことを
         確認済みなので、そこで差が出れば原因は <strong>支援技術側のキャッシュ</strong>であって DOM ではない。</p>
         <label class="check"><input type="checkbox"><span>classic / vapor 両方で記録した</span></label>

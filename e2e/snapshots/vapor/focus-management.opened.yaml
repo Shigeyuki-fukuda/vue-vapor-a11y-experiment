@@ -45,10 +45,10 @@
     - button "警告を出す"
   - 'region "動的コンポーネント: :is による差し替え"':
     - 'heading "動的コンポーネント: :is による差し替え" [level=2]'
-    - button "カード表示に切り替える"
-    - region "一覧表示":
-      - heading "一覧表示" [level=3]
+    - button "年払いに切り替える"
+    - region "月払い":
+      - heading "月払い" [level=3]
       - list:
-        - listitem: 2026年7月 請求書.pdf 7月2日 更新 · 220 KB
-        - listitem: 登壇資料 v3.key 7月18日 更新 · 12.4 MB
-        - listitem: 検証ログ.csv 7月26日 更新 · 48 KB
+        - listitem: フリー ¥0
+        - listitem: スタンダード ¥1,200 / 月
+        - listitem: ビジネス ¥3,800 / 月

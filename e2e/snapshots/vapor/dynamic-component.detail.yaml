@@ -40,11 +40,11 @@
     - button "警告を出す"
   - 'region "動的コンポーネント: :is による差し替え"':
     - 'heading "動的コンポーネント: :is による差し替え" [level=2]'
-    - button "一覧表示に切り替える"
-    - region "カード表示":
-      - heading "カード表示" [level=3]
-      - paragraph: サムネイルを大きく見たいときの表示。
+    - button "月払いに切り替える"
+    - region "年払い":
+      - heading "年払い" [level=3]
+      - paragraph: 1年分をまとめて支払うと2ヶ月分お得になります。
       - list:
-        - listitem: 2026年7月 請求書.pdf 7月2日 更新 · 220 KB
-        - listitem: 登壇資料 v3.key 7月18日 更新 · 12.4 MB
-        - listitem: 検証ログ.csv 7月26日 更新 · 48 KB
+        - listitem: フリー ¥0
+        - listitem: スタンダード ¥12,000 / 年 2ヶ月分お得
+        - listitem: ビジネス ¥38,000 / 年 2ヶ月分お得

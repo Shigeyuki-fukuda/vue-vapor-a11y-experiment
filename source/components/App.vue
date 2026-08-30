@@ -348,7 +348,7 @@ form button[type='submit'] {
 
 /*
   list-style: none を当てても listbox の意味は失われない。role を明示して
-  いるため。同じ理由で .file-list / .file-cards には role="list" を付けてある。
+  いるため。同じ理由で .plan-list / .plan-cards には role="list" を付けてある。
   Safari は list-style を消した ul をリストとして読まなくなることがある。
 */
 ul[role='listbox'] {
@@ -387,19 +387,19 @@ li[role='option'][aria-selected='true'] {
   color: var(--muted);
 }
 
-.file-list,
-.file-cards {
+.plan-list,
+.plan-cards {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.file-list {
+.plan-list {
   display: grid;
   gap: 0.25rem;
 }
 
-.file-list li {
+.plan-list li {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -409,13 +409,13 @@ li[role='option'][aria-selected='true'] {
   border-bottom: 1px solid var(--rule);
 }
 
-.file-cards {
+.plan-cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
   gap: 0.75rem;
 }
 
-.file-cards li {
+.plan-cards li {
   display: grid;
   gap: 0.3rem;
   padding: 0.9em;
@@ -424,11 +424,18 @@ li[role='option'][aria-selected='true'] {
   border-radius: 8px;
 }
 
-.file-title {
+.plan-name {
   font-weight: 600;
 }
 
-.file-note {
+/* 年払いだけに出る割引の表示。金額より小さく、色で区別する */
+.plan-saving {
+  font-size: 0.8em;
+  font-weight: 600;
+  color: var(--lane-vapor);
+}
+
+.plan-price {
   font-size: 0.85em;
   color: var(--muted);
 }
