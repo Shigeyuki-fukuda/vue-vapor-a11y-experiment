@@ -9,7 +9,7 @@
     - button "設定を開く"
   - 'region "動的 aria 属性: 開閉パネル"':
     - 'heading "動的 aria 属性: 開閉パネル" [level=2]'
-    - button "コンパイル結果の詳細"
+    - button "Vapor モードとは何ですか？"
   - 'region "フォームエラー: 入力検証"':
     - 'heading "フォームエラー: 入力検証" [level=2]'
     - text: メールアドレス
@@ -17,7 +17,8 @@
     - button "送信"
   - 'region "条件付き描画: v-if と v-show"':
     - 'heading "条件付き描画: v-if と v-show" [level=2]'
-    - button "補足を切り替え"
+    - checkbox "入力のヒントを表示する"
+    - text: 入力のヒントを表示する
   - 'region "リスト描画: キー付き v-for の再利用"':
     - 'heading "リスト描画: キー付き v-for の再利用" [level=2]'
     - button "先頭を末尾へ"
@@ -33,15 +34,15 @@
   - 'region "Teleport: body 直下へ移すダイアログ"':
     - 'heading "Teleport: body 直下へ移すダイアログ" [level=2]'
     - button "通知パネルを開く"
-  - 'region "Transition: 退場アニメーション中のツリー"':
-    - 'heading "Transition: 退場アニメーション中のツリー" [level=2]'
-    - button "警告を出す"
+  - 'region "Transition: leave 中のツリー"':
+    - 'heading "Transition: leave 中のツリー" [level=2]'
+    - button "保存する"
   - 'region "動的コンポーネント: :is による差し替え"':
     - 'heading "動的コンポーネント: :is による差し替え" [level=2]'
-    - button "カード表示に切り替える"
-    - region "一覧表示":
-      - heading "一覧表示" [level=3]
+    - button "年払いに切り替える"
+    - region "月払い":
+      - heading "月払い" [level=3]
       - list:
-        - listitem: 2026年7月 請求書.pdf 7月2日 更新 · 220 KB
-        - listitem: 登壇資料 v3.key 7月18日 更新 · 12.4 MB
-        - listitem: 検証ログ.csv 7月26日 更新 · 48 KB
+        - listitem: フリー ¥0
+        - listitem: スタンダード ¥1,200 / 月
+        - listitem: ビジネス ¥3,800 / 月

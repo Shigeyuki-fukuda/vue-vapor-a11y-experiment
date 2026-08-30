@@ -9,7 +9,7 @@ const targets = [
 for (const t of targets) {
   test(`transition alert — ${t.name}`, async ({ page }) => {
     await page.goto(t.url)
-    const toggle = page.getByRole('button', { name: /警告を(出す|閉じる)/ })
+    const toggle = page.getByRole('button', { name: /(保存する|エラーを閉じる)/ })
     const alert = page.getByRole('alert')
 
     // ① 初期状態 — alert なし
@@ -24,21 +24,21 @@ for (const t of targets) {
     await expect(alert).not.toHaveClass(/alert-enter-active/)
     const shown = await page.locator('#app').ariaSnapshot()
 
-    // ③ 退場アニメーションの最中 — このシナリオの本題。
+    // ③ leave の最中 — このシナリオの本題。
     //    v-if は false になっているが要素はまだ DOM にいる。
     //    この間 alert がツリーに残るかどうかが観測対象で、
-    //    残れば支援技術には「閉じたはずの警告がまだある」と伝わる
+    //    残れば支援技術には「閉じたはずのエラーがまだある」と伝わる
     await toggle.click()
     await expect(alert).toHaveClass(/alert-leave-active/)
     const leaving = await page.locator('#app').ariaSnapshot()
 
-    // 撮影後にもう一度確かめる。撮っている間に退場が完了していたら
+    // 撮影後にもう一度確かめる。撮っている間に leave が完了していたら
     // leaving は「消えた後」の姿になり、記録として誤りになる。
     // 黙って間違ったスナップショットを残すより、ここで落ちたほうがよい
     // (落ちた場合は style の transition 時間を延ばす)
     await expect(alert).toHaveClass(/alert-leave-active/)
 
-    // ④ 退場完了 — 要素が DOM から消える
+    // ④ leave 完了 — 要素が DOM から消える
     await expect(alert).toHaveCount(0)
     const gone = await page.locator('#app').ariaSnapshot()
 

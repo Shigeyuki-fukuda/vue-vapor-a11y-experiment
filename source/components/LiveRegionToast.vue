@@ -63,7 +63,7 @@ onBeforeUnmount(() => {
       器は CSS で画面上部へ固定している (一般的な通知の出方に合わせるため)。
       **DOM 上の位置はこのセクションの中のままなので ariaSnapshot は動かない。**
       入場のアニメーションは CSS の @keyframes で当てている。<TransitionGroup> を
-      使えば退場も付けられるが、このシナリオの観測対象でない Vue 機能を
+      使えば leave 側も付けられるが、このシナリオの観測対象でない Vue 機能を
       持ち込むことになるので採らない。
     -->
     <div role="status" class="toast-region">

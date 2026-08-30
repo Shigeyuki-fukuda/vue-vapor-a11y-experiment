@@ -156,6 +156,57 @@ button:hover {
   background: #ecebe5;
 }
 
+/*
+  よくある質問の行。質問文の左、開閉の印を右端に置いて、
+  行そのものが押せることが見て分かる形にする。
+*/
+.disclosure-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  padding: 0.8em 1em;
+  text-align: left;
+  border-color: var(--rule);
+  border-radius: var(--radius);
+}
+
+/*
+  開閉の印。閉じているときは下向き、開いたら上向きに返す。
+  文字ではなく境界線で三角を描いているのは、::before の content が
+  アクセシブルネームへ混ざるのを避けるため。
+*/
+.disclosure-marker {
+  flex: none;
+  width: 0;
+  height: 0;
+  border-right: 0.35rem solid transparent;
+  border-left: 0.35rem solid transparent;
+  border-top: 0.45rem solid var(--muted);
+  transition: transform 180ms ease;
+}
+
+.disclosure-toggle[aria-expanded='true'] .disclosure-marker {
+  transform: rotate(180deg);
+}
+
+.disclosure-panel {
+  padding: 0 1em;
+}
+
+.disclosure-panel > p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .disclosure-marker {
+    transition: none;
+  }
+}
+
 input {
   min-width: min(24rem, 100%);
   padding: 0.45em 0.6em;
@@ -164,6 +215,31 @@ input {
   background: var(--surface);
   border: 1.5px solid var(--rule);
   border-radius: 6px;
+}
+
+/*
+  上の input の既定はテキスト入力向け。min-width と枠線がチェックボックスにも
+  当たると、四角が入力欄の幅まで伸びて別物に見える。この形だけ打ち消す。
+*/
+input[type='checkbox'] {
+  width: 1.1rem;
+  height: 1.1rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  accent-color: var(--focus);
+}
+
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ラベルの文字を押しても切り替わることが分かるようにする */
+.checkbox-field label {
+  cursor: pointer;
 }
 
 input[aria-invalid='true'] {
@@ -206,6 +282,13 @@ form button[type='submit'] {
   outline-offset: 2px;
 }
 
+/* ダイアログ本文。見出しと閉じるボタンの間に置く文言 */
+[role='dialog'] p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
 [role='alert'] {
   margin: 0;
   color: var(--danger);
@@ -220,10 +303,16 @@ form button[type='submit'] {
 .toast-region {
   position: fixed;
   top: calc(var(--banner-height) + 0.75rem);
-  right: var(--space);
+  /*
+    器そのものを画面の中央へ寄せる。器は中身の幅しか持たないので、
+    left: 50% と -50% の平行移動で画面幅に依らず中央に来る。
+    入場アニメーションは .toast 側に当たっているため、この transform とは衝突しない。
+  */
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 70;
   display: grid;
-  justify-items: end;
+  justify-items: center;
   gap: 0.5rem;
   max-width: calc(100vw - 2 * var(--space));
   pointer-events: none;
@@ -259,7 +348,7 @@ form button[type='submit'] {
 
 /*
   list-style: none を当てても listbox の意味は失われない。role を明示して
-  いるため。同じ理由で .file-list / .file-cards には role="list" を付けてある。
+  いるため。同じ理由で .plan-list / .plan-cards には role="list" を付けてある。
   Safari は list-style を消した ul をリストとして読まなくなることがある。
 */
 ul[role='listbox'] {
@@ -298,19 +387,19 @@ li[role='option'][aria-selected='true'] {
   color: var(--muted);
 }
 
-.file-list,
-.file-cards {
+.plan-list,
+.plan-cards {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.file-list {
+.plan-list {
   display: grid;
   gap: 0.25rem;
 }
 
-.file-list li {
+.plan-list li {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -320,13 +409,13 @@ li[role='option'][aria-selected='true'] {
   border-bottom: 1px solid var(--rule);
 }
 
-.file-cards {
+.plan-cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
   gap: 0.75rem;
 }
 
-.file-cards li {
+.plan-cards li {
   display: grid;
   gap: 0.3rem;
   padding: 0.9em;
@@ -335,11 +424,18 @@ li[role='option'][aria-selected='true'] {
   border-radius: 8px;
 }
 
-.file-title {
+.plan-name {
   font-weight: 600;
 }
 
-.file-note {
+/* 年払いだけに出る割引の表示。金額より小さく、色で区別する */
+.plan-saving {
+  font-size: 0.8em;
+  font-weight: 600;
+  color: var(--lane-vapor);
+}
+
+.plan-price {
   font-size: 0.85em;
   color: var(--muted);
 }

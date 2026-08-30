@@ -1,3 +1,5 @@
-- dialog "表示設定":
-  - heading "表示設定" [level=3]
+- dialog "設定":
+  - heading "設定" [level=3]
+  - paragraph: アカウントと通知に関する設定をここにまとめます。
+  - paragraph: 変更は自動的に保存されます。
   - button "閉じる"

@@ -7,7 +7,7 @@ const targets = [
 ]
 
 /**
- * ariaSnapshot は開いたダイアログを `dialog "表示設定"` として出すが、
+ * ariaSnapshot は開いたダイアログを `dialog "設定"` として出すが、
  * **aria-modal は出力に現れない**。「モーダルであること」自体が比較対象から
  * 抜け落ちるため、属性を別時点として保存する。
  */
@@ -35,7 +35,7 @@ for (const t of targets) {
     // aria-modal は Tab 順に何の影響も与えないため、トラップが無いと
     // 2回目の Tab で次のセクションのボタンへ抜ける。ここが assert して
     // いるのは「抜けないこと」で、抜けた場合は :focus のツリーが
-    // 「コンパイル結果の詳細」ボタンになって落ちる。
+    // 「Vapor モードとは何ですか？」ボタンになって落ちる。
     const closer = page.getByRole('button', { name: '閉じる' })
     await page.keyboard.press('Tab')
     await expect(closer).toBeFocused()

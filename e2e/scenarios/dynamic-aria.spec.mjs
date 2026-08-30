@@ -16,7 +16,7 @@ const TOGGLE_ATTRIBUTES = ['aria-expanded', 'aria-controls']
 for (const t of targets) {
   test(`dynamic aria — ${t.name}`, async ({ page }) => {
     await page.goto(t.url)
-    const toggle = page.getByRole('button', { name: 'コンパイル結果の詳細' })
+    const toggle = page.getByRole('button', { name: 'Vapor モードとは何ですか？' })
 
     // ① 閉じている状態
     await expect(toggle).toHaveAttribute('aria-expanded', 'false')

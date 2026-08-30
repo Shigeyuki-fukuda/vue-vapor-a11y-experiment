@@ -9,9 +9,11 @@ const targets = [
 for (const t of targets) {
   test(`conditional render — ${t.name}`, async ({ page }) => {
     await page.goto(t.url)
-    const toggle = page.getByRole('button', { name: '補足を切り替え' })
-    const ifBlock = page.getByText('v-if で出し入れされる補足')
-    const showBlock = page.getByText('v-show で出し入れされる補足')
+    // v-if 側 / v-show 側の順に並んでいる。文面で区別しているので、
+    // ConditionalBlocks.vue の文言を変えるときはここも合わせる
+    const toggle = page.getByRole('checkbox', { name: '入力のヒントを表示する' })
+    const ifBlock = page.getByText('ユーザー ID は半角英数字で入力してください。')
+    const showBlock = page.getByText('記号は - と _ だけ使えます。')
 
     // ① 両方とも非表示
     await expect(ifBlock).toBeHidden()

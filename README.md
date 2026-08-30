@@ -197,13 +197,13 @@ CI で再生成されて未追跡のまま残り、**ベースラインが1件�
 | リスト描画 | キー付き `v-for` の並べ替え・削除で `aria-selected` / `aria-posinset` / `aria-setsize` が追随するか | [list-reorder](e2e/scenarios/list-reorder.spec.mjs) | ✅ なし |
 | コンポーネント合成 | props で渡した id による `aria-labelledby` / `aria-describedby` が境界を越えて保たれるか、slot の描画位置 | [composition](e2e/scenarios/composition.spec.mjs) | ✅ なし |
 | Teleport | `body` 直下へ移した後も `aria-modal` と関連付けが生きているか、template ref が移動先を指すか | [teleport-dialog](e2e/scenarios/teleport-dialog.spec.mjs) | ✅ なし |
-| Transition | 退場アニメーション中の要素がアクセシビリティツリーに残留するか | [transition-alert](e2e/scenarios/transition-alert.spec.mjs) | ✅ なし |
+| Transition | leave 中の要素がアクセシビリティツリーに残留するか | [transition-alert](e2e/scenarios/transition-alert.spec.mjs) | ✅ なし |
 | 動的コンポーネント | `:is` の差し替えで role が保たれ、古い関連付けが残らないか | [dynamic-component](e2e/scenarios/dynamic-component.spec.mjs) | ✅ なし |
 | SSR / hydration | サーバが描いた同一の HTML を、独立実装の hydration で引き継いでもツリーが保たれるか | [ssr-hydration](e2e/scenarios/ssr-hydration.spec.mjs) | ✅ なし |
 
 ### Transition で分かったこと (差分ではないが記録に値する)
 
-**退場アニメーションの最中、`role=alert` はアクセシビリティツリーに残る。**
+**leave の最中、`role=alert` はアクセシビリティツリーに残る。**
 `v-if` が false になっても要素はアニメーション完了まで DOM に留まるためで、
 [transition-alert.leaving](e2e/snapshots/classic/transition-alert.leaving.yaml)
 に `alert: 保存に失敗しました` が記録されている。
@@ -211,7 +211,7 @@ CI で再生成されて未追跡のまま残り、**ベースラインが1件�
 これは **classic と vapor の差分ではない** (両系統とも同じ挙動)。
 Vapor の問題ではなく、Transition を使う限り両方で起きる。
 閉じた直後に読み上げが走る設計にしていると、支援技術には
-「閉じたはずの警告がまだある」と伝わりうる。
+「閉じたはずのエラーがまだある」と伝わりうる。
 
 ## 検証コンポーネントをどこまで UI として実装したか
 
@@ -532,7 +532,7 @@ vapor 側:   VaporComponent
             template("<div role=dialog aria-modal=true aria-la
             template("<main><h1>Vue Vapor A11y Experiment
             template("<p id=email-error role=alert> メールアドレスの形式
-            template("<p>v-if で出し入れされる補足
+            template("<p class=field-hint> ユーザー ID は半角英数字
             template("<section aria-labelledby=conditional-hea
             template("<section aria-labelledby=disclosure-head
             template("<section aria-labelledby=focus-heading><
@@ -566,19 +566,21 @@ classic と vapor のアクセシビリティツリーが完全一致 (差分 0 
   - heading "Vue Vapor A11y Experiment" [level=1]
   - 'region "Live Region: トースト通知"':
     - 'heading "Live Region: トースト通知" [level=2]'
-    - button "保存"
+    - button "通知を表示"
     - status:
       - paragraph: 通知が届きました
   - 'region "フォーカス管理: モーダルダイアログ"':
     - 'heading "フォーカス管理: モーダルダイアログ" [level=2]'
     - button "設定を開く"
-    - dialog "表示設定":
-      - heading "表示設定" [level=3]
+    - dialog "設定":
+      - heading "設定" [level=3]
+      - paragraph: アカウントと通知に関する設定をここにまとめます。
+      - paragraph: 変更は自動的に保存されます。
       - button "閉じる"
   - 'region "動的 aria 属性: 開閉パネル"':
     - 'heading "動的 aria 属性: 開閉パネル" [level=2]'
-    - button "コンパイル結果の詳細" [expanded]
-    - paragraph: Vapor Mode は VDOM を経由せず DOM を直接更新する。
+    - button "Vapor モードとは何ですか？" [expanded]
+    - paragraph: 仮想 DOM を経由せず DOM を直接更新する描画方式です。差分計算が無いぶん、画面の更新が速くなります。
   - 'region "フォームエラー: 入力検証"':
     - 'heading "フォームエラー: 入力検証" [level=2]'
     - text: メールアドレス
@@ -607,10 +609,15 @@ classic と vapor のアクセシビリティツリーが完全一致 (差分 0 
 これも比較対象にしている。
 
 ```
-focus-opened:                    focus-trapped:      focus-closed:
-- dialog "表示設定":               - button "閉じる"    - button "設定を開く"
-  - heading "表示設定" [level=3]
+focus-opened:
+- dialog "設定":
+  - heading "設定" [level=3]
+  - paragraph: アカウントと通知に関する設定をここにまとめます。
+  - paragraph: 変更は自動的に保存されます。
   - button "閉じる"
+
+focus-trapped:        focus-closed:
+- button "閉じる"      - button "設定を開く"
 ```
 
 ダイアログを開くとダイアログ自身へ、閉じると呼び出し元のボタンへフォーカスが
@@ -641,10 +648,10 @@ focus-opened:                    focus-trapped:      focus-closed:
 
 ```
 focus-management.opened-attrs:
-- 表示設定閉じる: aria-modal=true aria-labelledby=focus-dialog-heading tabindex=-1
+- 設定アカウントと通知に関する設定をここにまとめます。変更は自動的に保存されます。閉じる: aria-modal=true aria-labelledby=focus-dialog-heading tabindex=-1
 
 dynamic-aria.expanded-attrs:
-- コンパイル結果の詳細: aria-expanded=true aria-controls=disclosure-panel
+- Vapor モードとは何ですか？: aria-expanded=true aria-controls=disclosure-panel
 
 form-error.invalid-attrs:
 - email-field: aria-invalid=true aria-describedby=email-error
