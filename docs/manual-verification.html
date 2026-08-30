@@ -1158,24 +1158,24 @@ pnpm run preview:vapor     <span class="c"># → localhost:4174</span></code></p
       <article class="step">
         <div class="step-head">
           <span class="step-num">B9</span>
-          <h3>Transition: 退場アニメーション中のツリー</h3>
+          <h3>Transition: leave 中のツリー</h3>
         </div>
-        <p class="why">E2E で<strong>退場中は <code>role=alert</code> がツリーに残る</strong>ことを
+        <p class="why">E2E で<strong>leave 中は <code>role=alert</code> がツリーに残る</strong>ことを
         確認済み（classic / vapor 共通）。ここで見たいのは、それが読み上げに乗るか。</p>
         <div class="table-wrap">
           <table>
             <thead><tr><th class="num">#</th><th>操作</th><th>キー</th></tr></thead>
             <tbody>
-              <tr><td class="num">1</td><td>「警告を出す」へフォーカスを移動して押下する</td><td class="keys"><kbd>Tab</kbd> → <kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
-              <tr><td class="num">2</td><td>警告の読み上げを記録する</td><td class="keys">（自動読み上げ）</td></tr>
-              <tr><td class="num">3</td><td>同じボタン（「警告を閉じる」）を押下する</td><td class="keys"><kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
-              <tr><td class="num">4</td><td>閉じた直後に警告が再度読まれないかを記録する</td><td class="keys">（自動読み上げ）</td></tr>
+              <tr><td class="num">1</td><td>「保存する」へフォーカスを移動して押下する</td><td class="keys"><kbd>Tab</kbd> → <kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
+              <tr><td class="num">2</td><td>エラーの読み上げを記録する</td><td class="keys">（自動読み上げ）</td></tr>
+              <tr><td class="num">3</td><td>同じボタン（「エラーを閉じる」）を押下する</td><td class="keys"><kbd>VO</kbd> + <kbd>Space</kbd></td></tr>
+              <tr><td class="num">4</td><td>閉じた直後にエラーが再度読まれないかを記録する</td><td class="keys">（自動読み上げ）</td></tr>
             </tbody>
           </table>
         </div>
         <div class="callout">
           <span class="label">✕ ではなく所見に書く</span>
-          <p>手順4で警告が読み上げられたら、<strong>残留がユーザーに届いている</strong>ということ。
+          <p>手順4でエラーが読み上げられたら、<strong>残留がユーザーに届いている</strong>ということ。
           ただしこれは両系統で等しく起きるので lane 間の ✕ にはせず、
           Transition を使う設計上の注意点として所見に書く。</p>
         </div>

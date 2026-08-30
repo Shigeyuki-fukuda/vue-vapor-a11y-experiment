@@ -197,13 +197,13 @@ CI で再生成されて未追跡のまま残り、**ベースラインが1件�
 | リスト描画 | キー付き `v-for` の並べ替え・削除で `aria-selected` / `aria-posinset` / `aria-setsize` が追随するか | [list-reorder](e2e/scenarios/list-reorder.spec.mjs) | ✅ なし |
 | コンポーネント合成 | props で渡した id による `aria-labelledby` / `aria-describedby` が境界を越えて保たれるか、slot の描画位置 | [composition](e2e/scenarios/composition.spec.mjs) | ✅ なし |
 | Teleport | `body` 直下へ移した後も `aria-modal` と関連付けが生きているか、template ref が移動先を指すか | [teleport-dialog](e2e/scenarios/teleport-dialog.spec.mjs) | ✅ なし |
-| Transition | 退場アニメーション中の要素がアクセシビリティツリーに残留するか | [transition-alert](e2e/scenarios/transition-alert.spec.mjs) | ✅ なし |
+| Transition | leave 中の要素がアクセシビリティツリーに残留するか | [transition-alert](e2e/scenarios/transition-alert.spec.mjs) | ✅ なし |
 | 動的コンポーネント | `:is` の差し替えで role が保たれ、古い関連付けが残らないか | [dynamic-component](e2e/scenarios/dynamic-component.spec.mjs) | ✅ なし |
 | SSR / hydration | サーバが描いた同一の HTML を、独立実装の hydration で引き継いでもツリーが保たれるか | [ssr-hydration](e2e/scenarios/ssr-hydration.spec.mjs) | ✅ なし |
 
 ### Transition で分かったこと (差分ではないが記録に値する)
 
-**退場アニメーションの最中、`role=alert` はアクセシビリティツリーに残る。**
+**leave の最中、`role=alert` はアクセシビリティツリーに残る。**
 `v-if` が false になっても要素はアニメーション完了まで DOM に留まるためで、
 [transition-alert.leaving](e2e/snapshots/classic/transition-alert.leaving.yaml)
 に `alert: 保存に失敗しました` が記録されている。
@@ -211,7 +211,7 @@ CI で再生成されて未追跡のまま残り、**ベースラインが1件�
 これは **classic と vapor の差分ではない** (両系統とも同じ挙動)。
 Vapor の問題ではなく、Transition を使う限り両方で起きる。
 閉じた直後に読み上げが走る設計にしていると、支援技術には
-「閉じたはずの警告がまだある」と伝わりうる。
+「閉じたはずのエラーがまだある」と伝わりうる。
 
 ## 検証コンポーネントをどこまで UI として実装したか
 

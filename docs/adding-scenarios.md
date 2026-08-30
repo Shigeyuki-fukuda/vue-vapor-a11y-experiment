@@ -89,7 +89,7 @@ async function open() {
 | リスト描画 | キー付き `v-for` の並べ替え・削除で `aria-selected` / `aria-posinset` / `aria-setsize` が追随するか | ✅ 完了 |
 | コンポーネント合成 | props で渡した id による関連付けが境界を越えて保たれるか、slot の描画位置 | ✅ 完了 |
 | Teleport | `body` 直下へ移した後の `aria-modal` と template ref | ✅ 完了 |
-| Transition | 退場アニメーション中の要素がツリーに残留するか | ✅ 完了 |
+| Transition | leave 中の要素がツリーに残留するか | ✅ 完了 |
 | 動的コンポーネント | `:is` の差し替えで role が保たれ、古い関連付けが残らないか | ✅ 完了 |
 
 ariaSnapshot 差分はいずれも 0 件。VoiceOver での読み上げ検証は

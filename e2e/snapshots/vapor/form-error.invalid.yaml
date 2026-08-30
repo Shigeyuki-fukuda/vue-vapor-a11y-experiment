@@ -36,9 +36,9 @@
   - 'region "Teleport: body 直下へ移すダイアログ"':
     - 'heading "Teleport: body 直下へ移すダイアログ" [level=2]'
     - button "通知パネルを開く"
-  - 'region "Transition: 退場アニメーション中のツリー"':
-    - 'heading "Transition: 退場アニメーション中のツリー" [level=2]'
-    - button "警告を出す"
+  - 'region "Transition: leave 中のツリー"':
+    - 'heading "Transition: leave 中のツリー" [level=2]'
+    - button "保存する"
   - 'region "動的コンポーネント: :is による差し替え"':
     - 'heading "動的コンポーネント: :is による差し替え" [level=2]'
     - button "年払いに切り替える"
