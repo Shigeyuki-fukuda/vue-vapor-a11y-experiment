@@ -449,7 +449,7 @@
       <div class="fact"><dt>パッケージ管理</dt><dd>pnpm 11.x（npm 不可）</dd></div>
       <div class="fact"><dt>検証対象</dt><dd>vue@3.6.0-rc.3</dd></div>
       <div class="fact"><dt>スクリーンリーダー</dt><dd>VoiceOver (macOS) + Safari</dd></div>
-      <div class="fact"><dt>検証カテゴリ</dt><dd>11 カテゴリ / 55 スナップショット</dd></div>
+      <div class="fact"><dt>検証カテゴリ</dt><dd>11 カテゴリ / 57 スナップショット</dd></div>
     </dl>
   </header>
 
@@ -747,7 +747,7 @@ pnpm run test:e2e</code></pre>
           <p>スナップショット取得前に状態が確定していないと、Vapor とは無関係な差分が出る。
           シナリオを足すときは必ず <code>expect(...)</code> で状態を待ってから取得する。</p>
         </div>
-        <label class="check"><input type="checkbox"><span>両系統で 55 スナップショットずつ生成された</span></label>
+        <label class="check"><input type="checkbox"><span>両系統で 57 スナップショットずつ生成された</span></label>
       </article>
 
       <!-- 07 -->
@@ -767,7 +767,7 @@ open results/diff-report.md</code></pre>
         </div>
         <div>
           <span class="label">期待される結果</span>
-          <div class="expect">results/diff-report.md を出力 (55件中 差分あり 0件)</div>
+          <div class="expect">results/diff-report.md を出力 (57件中 差分あり 0件)</div>
         </div>
         <div class="table-wrap">
           <table>
@@ -1112,7 +1112,9 @@ pnpm run preview:vapor     <span class="c"># → localhost:4174</span></code></p
             <tbody>
               <tr><td class="num">1</td><td>入力欄へフォーカスを移動する</td><td class="keys"><kbd>Tab</kbd></td></tr>
               <tr><td class="num">2</td><td>読み上げを記録する（「表示名」と読まれるか）</td><td class="keys">（自動読み上げ）</td></tr>
-              <tr><td class="num">3</td><td>注記まで読まれるかを記録する（「ほかの利用者に公開されます。全角32文字まで。」）</td><td class="keys">（自動読み上げ）</td></tr>
+              <tr><td class="num">3</td><td>文字数カウンタまで読まれるかを記録する（「0 / 32」）</td><td class="keys">（自動読み上げ）</td></tr>
+              <tr><td class="num">4</td><td><code>さくら</code> と入力し、いったん外へ出てから入力欄へ戻る</td><td class="keys">（キーボード入力）→ <kbd>Tab</kbd> ×2</td></tr>
+              <tr><td class="num">5</td><td>カウンタが「3 / 32」に変わって読まれるかを記録する</td><td class="keys">（自動読み上げ）</td></tr>
             </tbody>
           </table>
         </div>

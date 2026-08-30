@@ -579,7 +579,7 @@ vapor 側は HTML 文字列テンプレート + 直接 DOM 操作 (`template()` 
 
 ### ariaSnapshot 差分 (全11カテゴリ)
 
-`pnpm run test:e2e && pnpm run diff` の結果、**55スナップショットすべてで
+`pnpm run test:e2e && pnpm run diff` の結果、**57スナップショットすべてで
 classic と vapor のアクセシビリティツリーが完全一致 (差分 0 件)**。
 
 ```

@@ -6,6 +6,8 @@
 |---|---|
 | composition.composed-attrs | ✅ なし |
 | composition.composed | ✅ なし |
+| composition.typed-attrs | ✅ なし |
+| composition.typed | ✅ なし |
 | conditional-render.hidden-again | ✅ なし |
 | conditional-render.hidden | ✅ なし |
 | conditional-render.shown | ✅ なし |
