@@ -1,10 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { saveSnapshot, snapshotAttributes } from '../helpers/snapshot.mjs'
-
-const targets = [
-  { name: 'classic', url: 'http://localhost:4173' },
-  { name: 'vapor',   url: 'http://localhost:4174' },
-]
+import { TARGETS, openLane } from '../helpers/targets.mjs'
 
 /**
  * 差し替えで前のパネルの関連付けが残らないかを見る。
@@ -15,9 +11,9 @@ const targets = [
  */
 const REGION_ATTRIBUTES = ['id', 'aria-labelledby', 'aria-describedby']
 
-for (const t of targets) {
+for (const t of TARGETS) {
   test(`dynamic component — ${t.name}`, async ({ page }) => {
-    await page.goto(t.url)
+    await openLane(page, t)
     const toggle = page.getByRole('button', { name: /(年払い|月払い)に切り替える/ })
     const region = page.locator('#dynamic-region')
 

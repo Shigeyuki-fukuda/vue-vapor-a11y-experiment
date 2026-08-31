@@ -1,14 +1,10 @@
 import { test, expect } from '@playwright/test'
 import { saveSnapshot } from '../helpers/snapshot.mjs'
+import { TARGETS, openLane } from '../helpers/targets.mjs'
 
-const targets = [
-  { name: 'classic', url: 'http://localhost:4173' },
-  { name: 'vapor',   url: 'http://localhost:4174' },
-]
-
-for (const t of targets) {
+for (const t of TARGETS) {
   test(`transition alert — ${t.name}`, async ({ page }) => {
-    await page.goto(t.url)
+    await openLane(page, t)
     // 「閉じる」はダイアログ2種にも同名のボタンがある。どちらも既定では
     // 閉じているので現状は一意に決まるが、シナリオが増えたときに
     // 静かに別の要素を掴まないよう、セクションの中に閉じ込めておく

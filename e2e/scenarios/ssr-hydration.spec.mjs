@@ -1,14 +1,11 @@
 import { test, expect } from '@playwright/test'
 import { saveSnapshot } from '../helpers/snapshot.mjs'
-
-// このシナリオだけ /ssr.html を見る。他は index.html (クライアント描画)。
-const targets = [
-  { name: 'classic', url: 'http://localhost:4173/ssr.html' },
-  { name: 'vapor',   url: 'http://localhost:4174/ssr.html' },
-]
+import { TARGETS, openLane } from '../helpers/targets.mjs'
 
 /**
  * hydration の前後でアクセシビリティツリーを撮る。
+ *
+ * このシナリオだけ /ssr.html を見る。他は index.html (クライアント描画)。
  *
  * サーバが吐く HTML は両 lane で同一 (scripts/prerender.mjs が毎回確認)。
  * したがって hydration 後に差が出れば、原因は createSSRApp と
@@ -19,12 +16,12 @@ const targets = [
  * 実行速度に左右され、記録が信用できなくなる。JS を切ればサーバが描いた
  * DOM がそのまま残り、毎回同じものが撮れる。
  */
-for (const t of targets) {
+for (const t of TARGETS) {
   test(`ssr hydration — ${t.name}`, async ({ browser }) => {
     // ① hydration 前 — サーバが描いた DOM そのもの
     const staticContext = await browser.newContext({ javaScriptEnabled: false })
     const staticPage = await staticContext.newPage()
-    await staticPage.goto(t.url)
+    await openLane(staticPage, t, '/ssr.html')
 
     // #app が空なら prerender が効いておらず、hydration ではなく
     // クライアント描画を見ていることになる。空振りをここで止める
@@ -47,7 +44,7 @@ for (const t of targets) {
     })
     page.on('pageerror', (error) => warnings.push(`[pageerror] ${error.message}`))
 
-    await page.goto(t.url)
+    await openLane(page, t, '/ssr.html')
 
     // hydration の完了を待つ。サーバの HTML にイベントは載っていないので、
     // 押して反応があればクライアント側の処理が繋がったと判断できる。

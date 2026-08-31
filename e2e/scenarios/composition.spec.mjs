@@ -1,10 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { saveSnapshot, snapshotAttributes } from '../helpers/snapshot.mjs'
-
-const targets = [
-  { name: 'classic', url: 'http://localhost:4173' },
-  { name: 'vapor',   url: 'http://localhost:4174' },
-]
+import { TARGETS, openLane } from '../helpers/targets.mjs'
 
 /**
  * ariaSnapshot に現れない関連付け属性。
@@ -17,9 +13,9 @@ const targets = [
  */
 const FIELD_ATTRIBUTES = ['aria-labelledby', 'aria-describedby']
 
-for (const t of targets) {
+for (const t of TARGETS) {
   test(`composition — ${t.name}`, async ({ page }) => {
-    await page.goto(t.url)
+    await openLane(page, t)
     const field = page.getByRole('textbox', { name: '表示名' })
 
     // props で渡した id が子まで届き、アクセシブルネームが解決していること。
