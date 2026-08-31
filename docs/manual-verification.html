@@ -1,3 +1,5 @@
+<!doctype html>
+<html lang="ja">
 <meta charset="utf-8">
 <title>Vapor A11y 検証手順</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -98,7 +100,7 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* doctype なしでローカル表示した場合（quirks mode）の継承ずれ対策 */
+  /* フォーム部品と表は既定でフォントを継承しないので明示的に揃える */
   table, th, td, input, button { font-family: inherit; font-size: inherit; }
 
   .page {
@@ -575,15 +577,15 @@ synced -&gt; apps/vapor/src (14 files)
           ステップ 06 の SSR シナリオと Part B の項目 B11 が失敗する。</p>
         </div>
         <div>
-          <span class="label">期待される結果（2026-08-28 計測時の参考値 / 11カテゴリ）</span>
+          <span class="label">期待される結果（2026-08-30 計測時の参考値 / 11カテゴリ）</span>
           <div class="lanes">
             <div class="lane lane-classic">
               <span class="lane-name">classic</span>
-              <p>91.74 kB / gzip 35.65 kB</p>
+              <p>97.27 kB / gzip 37.48 kB</p>
             </div>
             <div class="lane lane-vapor">
               <span class="lane-name">vapor</span>
-              <p>101.15 kB / gzip 36.48 kB</p>
+              <p>108.39 kB / gzip 39.09 kB</p>
             </div>
           </div>
         </div>
@@ -601,7 +603,10 @@ synced -&gt; apps/vapor/src (14 files)
 | 5カテゴリ                                 | 28.3%       | 7.77 kB         |
 | 6カテゴリ (v-for 追加)                    | 19.1%       | 5.35 kB         |
 | 10カテゴリ (合成/Teleport/Transition/:is) | 3.6%        | 1.22 kB         |
-| 11カテゴリ (SSR / hydration 追加)         | -2.3%       | -0.83 kB (逆転) |</code></pre>
+| 11カテゴリ (SSR / hydration 追加)         | -4.3%       | -1.61 kB (逆転) |</code></pre>
+          <p class="why">11カテゴリの行だけは現在のソースに対する再計測値で、
+          他の行はそのカテゴリ数だった時点の記録。UI としての作り込みを足したぶん、
+          逆転幅は当初計測の -2.3% / -0.83 kB から広がっている。</p>
           <p><strong>差の絶対値そのものが縮んで符号まで反転している</strong>点が重要で、
           アプリコードが両系統に等しく積み上がるだけなら比率は縮んでも絶対値は変わらない。
           つまり vapor 側だけが余分に太っている。<code>v-for</code> 1つの増分は
@@ -645,13 +650,16 @@ synced -&gt; apps/vapor/src (14 files)
         <div>
           <span class="label">期待される結果</span>
           <div class="expect">✅ 全 lane のソースがバイト単位で同一 (14 files)
+✅ lane ごとの手書きファイルに意図しない差分なし (index.html, ssr.html, vite.config.mjs, src/entry-server.js)
 
-| lane | 期待 vapor | 期待マウント関数 | HTML文字列テンプレート | VNode props | 判定 |
-|---|---|---|---|---|---|
-| classic | false | createApp | 0 | 27 | ✅ OK |
-| vapor | true | createVaporApp | 18 | 0 | ✅ OK |
+| lane | 期待 vapor | 期待マウント関数 | 期待 SSR マウント関数 | HTML文字列テンプレート | VNode props | 判定 |
+|---|---|---|---|---|---|---|
+| classic | false | createApp | createSSRApp | 0 | 30 | ✅ OK |
+| vapor | true | createVaporApp | createVaporSSRApp | 24 | 0 | ✅ OK |
 
 ✅ 両 lane が意図どおり別のコンパイル戦略でビルドされています</div>
+          <p class="why">マーカーの件数は判定に使っていない（必須 &gt; 0 / 禁止 == 0 だけを見る）。
+          コンポーネントを増やせば動くので、上の数値は参考値として読むこと。</p>
         </div>
         <div class="table-wrap">
           <table>
@@ -740,7 +748,7 @@ pnpm run test:e2e</code></pre>
         <div>
           <span class="label">期待される結果</span>
           <div class="expect">全シナリオ pass。e2e/snapshots/classic と e2e/snapshots/vapor に
-それぞれ 55 個の .yaml が生成される。</div>
+それぞれ 57 個の .yaml が生成される。</div>
         </div>
         <div class="callout">
           <span class="label">タイミング由来の偽陽性に注意</span>
@@ -1065,13 +1073,16 @@ pnpm run preview:vapor     <span class="c"># → localhost:4174</span></code></p
           <span class="step-num">B6</span>
           <h3>リスト描画: キー付き v-for の再利用の検証</h3>
         </div>
-        <p class="why">初期状態では1件目（Vapor Mode）が選択済み。</p>
+        <p class="why">初期状態では1件目（Vapor Mode）が選択済み。
+        <kbd>Tab</kbd> の数は起点で変わるので、手順2では<strong>先に「先頭を削除」ボタンへ
+        キーボードフォーカスを移す</strong>。VO カーソルの位置とキーボードフォーカスは別物で、
+        手順1で読ませただけではフォーカスは動かない。</p>
         <div class="table-wrap">
           <table>
             <thead><tr><th class="num">#</th><th>操作</th><th>キー</th></tr></thead>
             <tbody>
               <tr><td class="num">1</td><td>リストへ入り、3項目を順に読ませて記録する</td><td class="keys"><kbd>VO</kbd> + <kbd>→</kbd></td></tr>
-              <tr><td class="num">2</td><td>3件目（Hydration）へフォーカスを移動する</td><td class="keys"><kbd>Tab</kbd> ×3</td></tr>
+              <tr><td class="num">2</td><td>「先頭を削除」にキーボードフォーカスを置いてから 3件目（Hydration）へ移動する</td><td class="keys"><kbd>Tab</kbd> ×3</td></tr>
               <tr><td class="num">3</td><td>押下して選択する</td><td class="keys"><kbd>Enter</kbd></td></tr>
               <tr><td class="num">4</td><td>選択直後の読み上げを記録する</td><td class="keys">（自動読み上げ）</td></tr>
               <tr><td class="num">5</td><td>「先頭を末尾へ」へ移動して押下する</td><td class="keys"><kbd>Tab</kbd> → <kbd>VO</kbd> + <kbd>Space</kbd></td></tr>

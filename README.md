@@ -23,13 +23,19 @@ Playwright の `ariaSnapshot()` でアクセシビリティツリーを取得し
 直接編集しない (編集すると2系統の同一性が壊れるため `.gitignore` 済み)。
 
 **2系統のコンポーネントソースはバイト単位で完全に同一。** Vapor Mode の指定は
-Vite 設定側にあり、コンポーネントには一切現れない。意図的な差分は次の2点だけで、
+Vite 設定側にあり、コンポーネントには一切現れない。意図的な差分は次の3点だけで、
 いずれも `pnpm run verify` が機械的に検証する。
 
 | 差分 | 場所 |
 |---|---|
 | コンパイルモード | `scripts/lanes.mjs` の `vapor` フラグ → `@vitejs/plugin-vue` の `features.vapor` |
-| マウント関数 | `apps/{lane}/src/main.js` の `createApp` / `createVaporApp` |
+| マウント関数 (クライアント描画) | `apps/{lane}/src/main.js` の `createApp` / `createVaporApp` |
+| マウント関数 (hydration) | `apps/{lane}/src/main-ssr.js` の `createSSRApp` / `createVaporSSRApp` |
+
+lane を画面で見分けるための `<title>` と帯だけは別枠。こちらは
+`apps/{lane}/index.html`・`ssr.html` にあり、**lane 名を伏せればバイト単位で同一**
+であることを verify が確認する (帯は `#app` の外 + `aria-hidden` なので
+アクセシビリティツリーには出ない)。
 
 これにより「観測された差分の原因は Vapor Mode 以外にない」ことを機械的に保証する。
 
@@ -39,23 +45,38 @@ Vite 設定側にあり、コンポーネントには一切現れない。意図
 > `features.vapor` はプラグインレベルの強制スイッチで、判定条件は
 > `<script setup>` の有無のみ。`lang="ts"` に依存しない。
 
-### 検証を成立させる3つのガード
+### 検証を成立させる4つのガード
 
 `pnpm run verify` が以下を確認し、1つでも崩れていれば非ゼロ終了する。
 
 | # | 検証内容 | 防ぐ事故 |
 |---|---|---|
 | 1 | 2系統のコンポーネントソースがバイト単位で同一 | 片方だけ編集し、差分の原因を Vapor だと取り違える |
-| 2 | ビルド設定と entry が lane のあるべき姿と一致 | 設定を間違えたまま比較して気付かない |
+| 2 | ビルド設定と2つの entry が lane のあるべき姿と一致 | 設定を間違えたまま比較して気付かない |
 | 3 | ビルド成果物が意図したコンパイル戦略で生成されている | プラグインが指定を無視し、classic 同士を比較する |
+| 4 | lane ごとの手書きファイルが lane 名以外で同一 | 片方の `index.html` に足した要素を Vapor 起因の差分と読む |
+
+2 が見る entry は `main.js` と `main-ssr.js` の**両方**。`main-ssr.js` は
+SSR / hydration カテゴリの観測点そのもので、ここを取り違えても
+コンポーネントは vapor としてコンパイルされたままなのでマーカー判定は通る。
+比較対象が「VDOM hydration 同士」に化けたことに誰も気付けなくなる。
+
+4 の対象は `index.html` / `ssr.html` / `vite.config.mjs` (lane 名を伏せれば同一) と
+`src/entry-server.js` (バイト単位で同一)。これらは生成物ではないため 1 の
+同一性検査を通らず、成果物マーカーはコンパイル戦略しか見ない。
+`teleport-dialog` のシナリオが `body` 全体を ariaSnapshot しているので、
+片方の `body` にツリーへ乗る要素が入ると恒常的な差分になる。
 
 3 の判定は **minify 済みの成果物**に対して行う。マーカーは文字列リテラルと
 オブジェクトキーなので、識別子と違って minify で消えない。
 
+判定条件は「必須マーカーが 1 件以上」かつ「禁止マーカーが 0 件」で、
+**件数そのものは固定していない**。コンポーネントを増やせば当然動く。
+
 | lane | HTML 文字列テンプレート (Vapor) | VNode props (VDOM) |
 |---|---|---|
-| classic | 0 | 29 |
-| vapor | 22 | 0 |
+| classic | 0 | 30 |
+| vapor | 24 | 0 |
 
 どちらの方向も見ているため、「Vapor になっていない」と「VDOM が混入した」の
 両方を検出できる。0 件はマーカー自体が陳腐化した場合にも起きるので、
@@ -90,7 +111,8 @@ vue-vapor-a11y-experiment/
 │  ├─ classic/                # createApp / src 配下は生成物 (直接編集しない)
 │  └─ vapor/                  # createVaporApp / src 配下は生成物 (同上)
 ├─ e2e/
-│  ├─ helpers/snapshot.mjs
+│  ├─ helpers/snapshot.mjs    # スナップショットの保存と、出ない属性の整形
+│  ├─ helpers/targets.mjs     # lane と URL の対応 (lanes.mjs から導出)
 │  ├─ scenarios/*.spec.mjs
 │  └─ snapshots/{classic,vapor}/
 └─ results/diff-report.md     # 発表資料の元ネタ
@@ -123,15 +145,31 @@ pnpm run check                          # 下記を通しで実行する
 pnpm run sync            # source/ → apps/{classic,vapor}/src へ配布
 pnpm run typecheck       # vue-tsc で両 lane の配布済みソースを型チェック
 pnpm run build           # 2系統をビルド (build:classic / build:vapor も個別に可)
-pnpm run verify          # 3つのガードを検証 ★これを通さない結果は信用しない
+pnpm run verify          # 4つのガードを検証 ★これを通さない結果は信用しない
 pnpm run smoke           # happy-dom での配線チェック
-pnpm run test:e2e        # ariaSnapshot 取得 (要 Playwright)
+pnpm run test:e2e        # build → verify を通してから ariaSnapshot 取得 (要 Playwright)
 pnpm run diff            # results/diff-report.md を出力 ★差分ありなら非ゼロ終了
 ```
 
+`test:e2e` が自分で `build` と `verify` を通すのは、**E2E に「ガードを通した
+成果物そのもの」を観測させる**ため。以前はビルドを Playwright の `webServer` に
+載せていたので、`check` が verify した成果物はその後 lane ごとに作り直され、
+E2E が見るのは未検証の世代だった。さらに lane 単位の `prerender` は
+lane 間ハッシュ照合を飛ばすため、`ssr.html` は「サーバ側は両 lane で同一」の
+確認を経ていなかった。`check` の中では `build` と `verify` を2度通ることに
+なるが、どちらも1秒に満たない。`test:e2e` を単独で回しても成立するほうを取った。
+
 `diff` は 2系統を突き合わせている唯一の箇所なので、差分を見つけたら失敗させる。
-ここが 0 を返すと、`check` は「Vapor でアクセシビリティツリーが変わった」という
-**この検証が唯一検出したい事象が起きたときにこそ緑になる**。
+**差分を見つけても 0 を返す作りにすると**、「Vapor でアクセシビリティツリーが
+変わった」という**この検証が唯一検出したい事象が起きたときにこそ `check` が緑になる**。
+
+同じ理由で `diff` は次の2つでも失敗する。どちらも「比較していないのに緑」を防ぐもので、
+差分が無いことの確認になっていない状態を通さない。
+
+| 失敗させる状態 | 見逃すと起きること |
+|---|---|
+| スナップショットが1件も無い | 「0件中 差分あり 0件」と表示して通る |
+| 対応する spec の無いスナップショットがある | 消したシナリオの古い記録同士が一致し続け、件数を水増しする |
 
 VoiceOver 検証で使うプレビューサーバは別に立てる (`check` には含まれない)。
 
@@ -165,7 +203,11 @@ CI は `check` に加えて **スナップショットがコミット済みの�
 
 後者に `git diff` ではなく `git status` を使うのは、`git diff` が追跡済みファイルの
 変更しか拾わないため。シナリオを足して spec だけコミットすると、スナップショットは
-CI で再生成されて未追跡のまま残り、**ベースラインが1件も無い状態で緑になる**。
+CI で再生成されて未追跡のまま残り、**ベースラインが記録されないまま緑になる**。
+
+なお「スナップショットが1件も無い」状態そのものは `pnpm run diff` 側が
+失敗させる。`git status` が塞ぐのは、記録済みのベースラインに対して
+**新しく足した分だけが未追跡で残る**ケース。
 
 `results/` は一致判定の対象外。`diff-report.md` が実行日を埋め込むので、
 中身が同じでも別の日には必ず差分が出る。
@@ -295,9 +337,12 @@ Vapor の問題ではなく、Transition を使う限り両方で起きる。
 この検証が扱っているのは **単一コンポーネント内の静的/動的 aria 属性**と、
 コンポーネントをまたぐ関連付け・描画方式の違い。
 
-`source/components/` は現時点で `defineEmits` / `withDefaults` / `defineModel` /
+`source/components/` は現時点で `defineEmits` / `withDefaults` /
 `<Suspense>` / `provide` / `inject` を使っていない。
-`defineProps<T>()` / `<Teleport>` / `<Transition>` / `:is` は検証のために導入済み。
+`defineProps<T>()` / `defineModel<T>()` / `<Teleport>` / `<Transition>` / `:is` は
+検証のために導入済み ([LabelledField](source/components/LabelledField.vue) が
+`defineModel` で親へ値を戻し、参照先の文字列が書き換わり続けても
+`aria-describedby` の関連付けが保たれるかを見ている)。
 
 > props / slots・`<Teleport>`・`<Transition>`・`:is`・SSR / hydration は
 > いずれも検証済みで差分なし (上の「検証カテゴリ」を参照)。
@@ -345,8 +390,8 @@ vapor は `createVaporSSRApp` (`@vue/runtime-vapor` の独立実装) で引き�
 ```
 | lane | HTML の長さ | teleports の長さ | sha256 (先頭12) |
 |---|---|---|---|
-| classic | 2679 | 64 | 031a38b7e407 |
-| vapor   | 2679 | 64 | 031a38b7e407 |
+| classic | 3309 | 64 | ed2f866445a0 |
+| vapor   | 3309 | 64 | ed2f866445a0 |
 ✅ サーバ描画の HTML は全 lane で同一 (hydration 前の入力が揃っている)
 ```
 
@@ -540,14 +585,18 @@ pnpm run verify
 
 ```
 ✅ 全 lane のソースがバイト単位で同一 (14 files)
+✅ lane ごとの手書きファイルに意図しない差分なし (index.html, ssr.html, vite.config.mjs, src/entry-server.js)
 
-| lane | 期待 vapor | 期待マウント関数 | HTML文字列テンプレート | VNode props | 判定 |
-|---|---|---|---|---|---|
-| classic | false | createApp | 0 | 27 | ✅ OK |
-| vapor | true | createVaporApp | 18 | 0 | ✅ OK |
+| lane | 期待 vapor | 期待マウント関数 | 期待 SSR マウント関数 | HTML文字列テンプレート | VNode props | 判定 |
+|---|---|---|---|---|---|---|
+| classic | false | createApp | createSSRApp | 0 | 30 | ✅ OK |
+| vapor | true | createVaporApp | createVaporSSRApp | 24 | 0 | ✅ OK |
 
 ✅ 両 lane が意図どおり別のコンパイル戦略でビルドされています
 ```
+
+マーカーの件数は判定に使っていない (必須 > 0 / 禁止 == 0 だけを見る)。
+コンポーネントを増やせば動くので、表の数値は参考値として読むこと。
 
 生成コードそのものを読みたい場合は minify なしでビルドして grep する。
 
@@ -762,9 +811,14 @@ diff -r apps/classic/src/components apps/vapor/src/components
 | 差分 | 目的 |
 |---|---|
 | `main.js` のマウント関数 (`createApp` / `createVaporApp`) | 検証対象そのもの。`pnpm run verify` が検証する |
-| `main-ssr.js` のマウント関数 (`createSSRApp` / `createVaporSSRApp`) | SSR カテゴリの観測点そのもの |
+| `main-ssr.js` のマウント関数 (`createSSRApp` / `createVaporSSRApp`) | SSR カテゴリの観測点そのもの。同じく verify が検証する |
 | `index.html` / `ssr.html` の `<title>` と lane 帯 | VoiceOver 検証でどちらを操作しているかを見分ける |
 
 lane 帯は `#app` の外にあり `aria-hidden="true"` なので、アクセシビリティツリーには
-出ない (差分 0 件がそれを裏付けている)。`entry-server.js` は lane ごとに置いてあるが
-内容は同一で、SSR 出力の一致を `prerender` が毎回確かめる。
+出ない (差分 0 件がそれを裏付けている)。
+
+**3つめが「lane 名だけの差分」に留まっていることも verify が確認する。**
+`index.html` / `ssr.html` は生成物ではないので手でいくらでも書き換えられ、
+片方の `body` にツリーへ乗る要素を足すと恒常的な差分になる。
+`entry-server.js` は lane ごとに置いてあるが内容はバイト単位で同一で、
+こちらも verify が突き合わせる (SSR 出力の一致は `prerender` が毎回確かめる)。
