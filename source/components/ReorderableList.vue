@@ -41,10 +41,19 @@ function removeFirst() {
     <h2 id="list-heading">リスト描画: キー付き v-for の再利用の検証</h2>
     <button type="button" @click="rotate">先頭を末尾へ</button>
     <button type="button" @click="removeFirst">先頭を削除</button>
-    <!-- APG の listbox は aria-activedescendant でフォーカスを管理するが、
-         ここでは各 option を tabindex で直接辿れる形にしている。
+    <!-- APG の listbox は aria-activedescendant と roving tabindex でフォーカスを
+         管理するが、ここでは各 option を tabindex で直接辿れる形にしている。
          フォーカス移動そのものは FocusDialog 側で検証済みで、
-         このシナリオの観測対象はリスト再利用時の属性更新に絞りたいため。 -->
+         このシナリオの観測対象はリスト再利用時の属性更新に絞りたいため。
+
+         **この listbox は APG 準拠ではない。** 矢印キーでの移動を持たず、
+         全項目が Tab 順に載る。実装例として写す場合は APG の
+         Listbox Pattern を参照すること。
+
+         一方で Enter と Space の両方を受けるのは省略しない。role="option" は
+         button と違って Space の既定動作が「選択」にならないため、Enter だけに
+         すると **キーボードで到達できるのに Space では無反応** という、
+         この検証と無関係な操作性の欠陥が実装例に残る。 -->
     <ul role="listbox" aria-labelledby="list-heading">
       <li
         v-for="(row, index) in rows"
@@ -56,6 +65,7 @@ function removeFirst() {
         :aria-setsize="rows.length"
         @click="select(row.id)"
         @keydown.enter="select(row.id)"
+        @keydown.space.prevent="select(row.id)"
       >
         {{ row.label }}
       </li>
