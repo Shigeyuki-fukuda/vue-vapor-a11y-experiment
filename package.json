@@ -19,7 +19,7 @@
     "typecheck": "vue-tsc -p tsconfig.json",
     "verify": "node scripts/verify-vapor-mode.mjs",
     "smoke": "node scripts/smoke-test.mjs",
-    "test:e2e": "playwright test",
+    "test:e2e": "pnpm run build && pnpm run verify && playwright test",
     "diff": "node scripts/diff-snapshots.mjs",
     "check": "pnpm run sync && pnpm run typecheck && pnpm run build && pnpm run verify && pnpm run smoke && pnpm run test:e2e && pnpm run diff"
   },

@@ -1,10 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { saveSnapshot, snapshotAttributes } from '../helpers/snapshot.mjs'
-
-const targets = [
-  { name: 'classic', url: 'http://localhost:4173' },
-  { name: 'vapor',   url: 'http://localhost:4174' },
-]
+import { TARGETS, openLane } from '../helpers/targets.mjs'
 
 /**
  * aria-expanded は ariaSnapshot に `[expanded]` として出るが、
@@ -13,9 +9,9 @@ const targets = [
  */
 const TOGGLE_ATTRIBUTES = ['aria-expanded', 'aria-controls']
 
-for (const t of targets) {
+for (const t of TARGETS) {
   test(`dynamic aria — ${t.name}`, async ({ page }) => {
-    await page.goto(t.url)
+    await openLane(page, t)
     const toggle = page.getByRole('button', { name: 'Vapor モードとは何ですか？' })
 
     // ① 閉じている状態

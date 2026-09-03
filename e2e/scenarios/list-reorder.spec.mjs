@@ -1,10 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { saveSnapshot, snapshotAttributes } from '../helpers/snapshot.mjs'
-
-const targets = [
-  { name: 'classic', url: 'http://localhost:4173' },
-  { name: 'vapor',   url: 'http://localhost:4174' },
-]
+import { TARGETS, openLane } from '../helpers/targets.mjs'
 
 /**
  * ariaSnapshot に現れない属性。並べ替えで古い値が残らないかを見る。
@@ -22,9 +18,9 @@ const targets = [
  */
 const LIST_ATTRIBUTES = ['aria-posinset', 'aria-setsize', 'aria-selected', 'data-probe']
 
-for (const t of targets) {
+for (const t of TARGETS) {
   test(`list reorder — ${t.name}`, async ({ page }) => {
-    await page.goto(t.url)
+    await openLane(page, t)
     const options = page.getByRole('option')
     const rotate = page.getByRole('button', { name: '先頭を末尾へ' })
     const removeFirst = page.getByRole('button', { name: '先頭を削除' })

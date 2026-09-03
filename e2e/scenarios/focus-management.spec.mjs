@@ -1,10 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { saveSnapshot, snapshotAttributes } from '../helpers/snapshot.mjs'
-
-const targets = [
-  { name: 'classic', url: 'http://localhost:4173' },
-  { name: 'vapor',   url: 'http://localhost:4174' },
-]
+import { TARGETS, openLane } from '../helpers/targets.mjs'
 
 /**
  * ariaSnapshot は開いたダイアログを `dialog "設定"` として出すが、
@@ -13,9 +9,9 @@ const targets = [
  */
 const DIALOG_ATTRIBUTES = ['aria-modal', 'aria-labelledby', 'tabindex']
 
-for (const t of targets) {
+for (const t of TARGETS) {
   test(`focus management — ${t.name}`, async ({ page }) => {
-    await page.goto(t.url)
+    await openLane(page, t)
     const opener = page.getByRole('button', { name: '設定を開く' })
     const dialog = page.getByRole('dialog')
 

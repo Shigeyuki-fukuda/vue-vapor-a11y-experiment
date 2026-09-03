@@ -1,14 +1,10 @@
 import { test, expect } from '@playwright/test'
 import { saveSnapshot } from '../helpers/snapshot.mjs'
+import { TARGETS, openLane } from '../helpers/targets.mjs'
 
-const targets = [
-  { name: 'classic', url: 'http://localhost:4173' },
-  { name: 'vapor',   url: 'http://localhost:4174' },
-]
-
-for (const t of targets) {
+for (const t of TARGETS) {
   test(`conditional render — ${t.name}`, async ({ page }) => {
-    await page.goto(t.url)
+    await openLane(page, t)
     // v-if 側 / v-show 側の順に並んでいる。文面で区別しているので、
     // ConditionalBlocks.vue の文言を変えるときはここも合わせる
     const toggle = page.getByRole('checkbox', { name: '入力のヒントを表示する' })

@@ -1,14 +1,10 @@
 import { test, expect } from '@playwright/test'
 import { saveSnapshot } from '../helpers/snapshot.mjs'
+import { TARGETS, openLane } from '../helpers/targets.mjs'
 
-const targets = [
-  { name: 'classic', url: 'http://localhost:4173' },
-  { name: 'vapor',   url: 'http://localhost:4174' },
-]
-
-for (const t of targets) {
+for (const t of TARGETS) {
   test(`live region — ${t.name}`, async ({ page }) => {
-    await page.goto(t.url)
+    await openLane(page, t)
 
     const notify = page.getByRole('button', { name: '通知を表示' })
     // 器 (role=status) は常に DOM にあり、行が出入りする。行を数えれば
@@ -35,6 +31,18 @@ for (const t of targets) {
     await notify.click()
     await expect(toasts).toHaveCount(2)
     const repeated = await page.locator('#app').ariaSnapshot()
+
+    // 撮ったものが本当に「2行ある姿」だったかを、撮影後にもう一度確かめる。
+    //
+    // トーストは TOAST_DURATION_MS (5000ms) で自動的に消える。1回目のクリックから
+    // ここまでに 5 秒経つと、toHaveCount(2) を通った直後・撮影の完了前に1本目が消え、
+    // **1行だけの姿がエラーなく repeated として保存される**。両 lane で同時に起きれば
+    // 「行が積まれること」の記録が壊れたまま差分なしになり、片 lane だけ起きれば
+    // Vapor 起因に見える偽の差分になる。
+    //
+    // 撮影後に確かめれば、黙って壊れる代わりにここで落ちる。
+    // 落ちたら LiveRegionToast の TOAST_DURATION_MS を延ばす。
+    await expect(toasts).toHaveCount(2)
 
     // ⑤ 自動で消えること。上限は LiveRegionToast の TOAST_DURATION_MS
     // (5000ms) より十分長く取る。短くすると「消えない実装」ではなく

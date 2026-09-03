@@ -24,17 +24,30 @@ export default defineConfig({
    * ローカルの出力は今までどおり list。
    */
   reporter: process.env.CI ? [['html', { open: 'never' }], ['dot']] : 'list',
+  /**
+   * webServer は**配信するだけ**。ビルドと検証は package.json の test:e2e が
+   * `playwright test` の前段で済ませている。
+   *
+   * 以前はここで lane ごとに
+   * `build:{lane} && build:ssr:{lane} && prerender {lane} && preview:{lane}`
+   * を走らせていた。これには穴が2つあった。
+   *
+   * 1. `pnpm run check` は build → verify → test:e2e の順に進むのに、
+   *    webServer が dist を作り直すため **E2E が観測するのは verify を
+   *    通していない世代**だった。test:e2e 単独ではガードが一度も走らない。
+   * 2. scripts/prerender.mjs は lane を渡されると lane 間ハッシュ照合を
+   *    明示的にスキップする。**E2E が配信を受ける ssr.html は
+   *    「サーバ側は両 lane で同一」の確認を通っていなかった。**
+   *    SSR カテゴリはこの前提の上で「差が出たら hydration のせい」と
+   *    結論づけるので、前提が未確認だとサーバ描画の食い違いを
+   *    Vapor 起因と読み違える余地が残る。
+   *
+   * globalSetup へ移す案は採らない。**実測すると webServer のほうが
+   * globalSetup より先に起動する**ため、preview が古い dist を掴んだまま
+   * 立ち上がってしまう。npm script の前段なら順序が確実に決まる。
+   */
   webServer: Object.keys(LANES).map((lane) => ({
-    // ssr.html を配信するには SSR ビルドと prerender まで通す必要がある。
-    // prerender を飛ばすと #app が空のまま配信され、hydration ではなく
-    // 通常のクライアント描画を見ることになる (それでも E2E は通ってしまう)。
-    //
-    // prerender に lane を渡すのは、2つの webServer が並行して立ち上がり、
-    // 相手の dist-server がまだ無い状態で読みにいくのを避けるため。
-    // lane 間の HTML 一致は `pnpm run build` 側で確認している。
-    command:
-      `pnpm run build:${lane} && pnpm run build:ssr:${lane} && ` +
-      `pnpm run prerender ${lane} && pnpm run preview:${lane}`,
+    command: `pnpm run preview:${lane}`,
     port: LANES[lane].previewPort,
     reuseExistingServer: false,
   })),
