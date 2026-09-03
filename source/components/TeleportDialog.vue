@@ -41,6 +41,8 @@ async function close() {
  */
 function onKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {
+    // FocusDialog と同一。既定動作を止めてから閉じる。
+    event.preventDefault()
     close()
     return
   }

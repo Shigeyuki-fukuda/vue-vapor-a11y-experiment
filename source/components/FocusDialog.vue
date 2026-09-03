@@ -51,6 +51,9 @@ async function close() {
  */
 function onKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {
+    // 既定動作を止めてから閉じる。Escape はブラウザ側で読み込み中断などに
+    // 割り当てられているため、閉じる操作と二重に走らせない。
+    event.preventDefault()
     close()
     return
   }
