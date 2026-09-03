@@ -73,15 +73,36 @@ async function open() {
 ## 4. シナリオの追加
 
 既存の `e2e/scenarios/live-region.spec.mjs` をコピーして書き換えるのが早い。
-守るべき点は2つ。
+守るべき点は3つ。
 
-1. **スナップショット前に必ず状態確定を待つ** — `expect(...).toHaveText()` などで
+1. **lane の URL を書かない** — `TARGETS` を回して `openLane()` で開く。
+
+   ```js
+   import { TARGETS, openLane } from '../helpers/targets.mjs'
+
+   for (const t of TARGETS) {
+     test(`… — ${t.name}`, async ({ page }) => {
+       await openLane(page, t)
+   ```
+
+   ポート番号を spec に書き写すと、`{ name: 'vapor', url: '…:4173' }` のような
+   打ち間違いが**落ちずに通る**。classic のツリーが vapor として保存され、
+   classic 同士の比較になって必ず「差分なし」が出る。
+   `openLane()` は開いた先の lane 帯 (`data-lane`) が `t.name` と
+   一致することも確かめる。
+2. **スナップショット前に必ず状態確定を待つ** — `expect(...).toHaveText()` などで
    待ってから `ariaSnapshot()` を呼ぶ。待たないと「取得タイミング由来」の
    差分がノイズとして出る。
-2. **ファイル名を `<シナリオ>.<時点>.yaml` に揃える** — `saveSnapshot()` の
+3. **ファイル名を `<シナリオ>.<時点>.yaml` に揃える** — `saveSnapshot()` の
    第2引数がシナリオ名、第3引数のキーが時点になる。比較するのは
    「classic の before vs vapor の before」「after 同士」であり、
    同系統内の before/after 比較ではない。
+
+   シナリオ名は **spec のファイル名と一致させる**。`pnpm run diff` が
+   `e2e/scenarios/<シナリオ>.spec.mjs` の存在を突き合わせており、
+   対応する spec の無いスナップショットが残っていると失敗する
+   (消したシナリオの古い記録が、両 lane に揃っている限り一致し続けて
+   件数を水増しするのを防ぐため)。
 
 ## 検証カテゴリのロードマップ
 
@@ -97,11 +118,10 @@ async function open() {
 | Teleport | `body` 直下へ移した後の `aria-modal` と template ref | ✅ 完了 |
 | Transition | leave 中の要素がツリーに残留するか | ✅ 完了 |
 | 動的コンポーネント | `:is` の差し替えで role が保たれ、古い関連付けが残らないか | ✅ 完了 |
+| SSR / hydration | サーバ描画した HTML を独立実装の hydration で引き継いでもツリーが保たれるか | ✅ 完了 |
 
 ariaSnapshot 差分はいずれも 0 件。VoiceOver での読み上げ検証は
 [../results/voiceover-log.md](../results/voiceover-log.md) が未記入のため残っている。
-
-| SSR / hydration | サーバ描画した HTML を独立実装の hydration で引き継いでもツリーが保たれるか | ✅ 完了 |
 
 ### 次に増やすなら
 

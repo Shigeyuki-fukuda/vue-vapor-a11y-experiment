@@ -7,7 +7,7 @@
 | 項目 | 値 |
 |---|---|
 | 検証日 | (YYYY-MM-DD) |
-| macOS | 26.5.2 |
+| macOS | (未記入) |
 | Safari | (未記入) |
 | VoiceOver 詳細度 | (未記入) |
 | vue | 3.6.0-rc.3 |
@@ -155,8 +155,9 @@
 
 ## ariaSnapshot 側の結果 (対比用)
 
-上記11カテゴリはいずれも **ariaSnapshot 差分 0 件** (57スナップショット、
-計測日 2026-08-29)。詳細は [diff-report.md](diff-report.md)。
+上記11カテゴリはいずれも **ariaSnapshot 差分 0 件** (57スナップショット)。
+計測日を含む詳細は [diff-report.md](diff-report.md) を参照
+(`pnpm run diff` のたびに再生成されるので、日付はここに書き写さない)。
 
 > ただし `aria-modal` / `aria-controls` / `aria-describedby` /
 > `aria-posinset` / `aria-setsize` は ariaSnapshot の出力に現れないため、
