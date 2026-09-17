@@ -340,7 +340,7 @@ Vapor の問題ではなく、Transition を使う限り両方で起きる。
 `source/components/` は現時点で `defineEmits` / `withDefaults` /
 `<Suspense>` / `provide` / `inject` を使っていない。
 `defineProps<T>()` / `defineModel<T>()` / `<Teleport>` / `<Transition>` / `:is` は
-検証のために導入済み ([LabelledField](source/components/LabelledField.vue) が
+検証のために導入済み ([LabelledTextField](source/components/LabelledTextField.vue) が
 `defineModel` で親へ値を戻し、参照先の文字列が書き換わり続けても
 `aria-describedby` の関連付けが保たれるかを見ている)。
 
@@ -478,7 +478,7 @@ vapor コンポーネントが classic として扱われ、比較そのもの�
 (`template()` に焼き込まれた aria 属性) は TS 化前後で完全に同一だった。
 
 型ベースマクロ (`defineProps<T>()`) はこの計測の時点では未使用だったが、
-その後 [LabelledField](source/components/LabelledField.vue) などで導入し、
+その後 [LabelledTextField](source/components/LabelledTextField.vue) などで導入し、
 コンポーネント合成として検証済み (差分なし)。
 ビルド設定とハーネスの `.mjs` はブラウザに読み込まれないため成果物に影響しない。
 

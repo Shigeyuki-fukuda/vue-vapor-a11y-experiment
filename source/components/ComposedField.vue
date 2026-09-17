@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import LabelledField from './LabelledField.vue'
+import LabelledTextField from './LabelledTextField.vue'
 
 /** 表示名の上限。入力欄の maxlength と注記の残り文字数で同じ値を使う */
 const MAX_LENGTH = 32
@@ -24,7 +24,7 @@ const used = computed(() => displayName.value.length)
       「何を入力する欄か」が伝わらなければ、デモとしても実装例としても
       成立しないため、ラベル・入力欄・注記が縦に並ぶ一般的な形にした。
 
-      ラベルとカウンタは親が持ち、入力欄は子 (LabelledField) が持つ。両者を結ぶのは
+      ラベルとカウンタは親が持ち、入力欄は子 (LabelledTextField) が持つ。両者を結ぶのは
       id 参照だけで、その id は props としてコンポーネント境界を越える。
       ここが切れると入力欄はアクセシブルネームを失い、textbox の名前が空になる。
 
@@ -36,13 +36,13 @@ const used = computed(() => displayName.value.length)
       観測対象で、ここで重ねるとどちらを見ているのか分からなくなる。
     -->
     <span id="composed-label" class="field-label">表示名</span>
-    <LabelledField
+    <LabelledTextField
       v-model="displayName"
       label-id="composed-label"
       description-id="composed-description"
       :max-length="MAX_LENGTH"
     >
       <p id="composed-description" class="field-counter">{{ used }} / {{ MAX_LENGTH }}</p>
-    </LabelledField>
+    </LabelledTextField>
   </section>
 </template>
