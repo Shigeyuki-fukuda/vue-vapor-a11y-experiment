@@ -350,9 +350,11 @@ Vapor の問題ではなく、Transition を使う限り両方で起きる。
 > 詳細は「[キー付き `v-for` の再利用](#キー付き-v-for-の再利用)」。
 
 **それでも「Vapor Mode でアクセシビリティは壊れない」と言い切るには足りない。**
-確認できたのは ariaSnapshot が表現する範囲での一致であって、
-[VoiceOver での読み上げ](results/voiceover-log.md)は未記入のまま。
-機械比較で一致していても支援技術での体験が同じとは限らない。
+[VoiceOver での実測](results/voiceover-log.md)は 11 カテゴリすべて終えており、
+lane 差は 1 件 (モーダルダイアログの境界で Vapor だけが領域名を読まない)。
+ただし測ったのは **macOS 26.6.2 / Safari 26.6.2 / VoiceOver 日本語・詳細度「高」/
+vue 3.6.0-rc.3 という 1 構成だけ**で、NVDA・JAWS・TalkBack は測っていない。
+Vapor は変更が続いているため、rc が上がれば結果が変わりうる。
 
 ## SSR / hydration
 
