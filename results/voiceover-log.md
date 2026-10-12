@@ -44,8 +44,8 @@
 
 ## lane 差は B2 の 1 件だけ
 
-[モーダルダイアログの境界で、Vapor だけが領域名を読まない](https://github.com/Shigeyuki-fukuda/vue-vapor-a11y-experiment/issues/21#issuecomment-5559698026)。
-再測でも再現した。同じダイアログを `<Teleport>` で `body` 直下へ移した B8 では
+[モーダルダイアログの境界で、Vapor lane だけ VoiceOver が領域名を読まなかった](https://github.com/Shigeyuki-fukuda/vue-vapor-a11y-experiment/issues/21#issuecomment-5559698026)。
+再測でも再現した。ariaSnapshot は両 lane で同一で、原因は特定していない。同じダイアログを `<Teleport>` で `body` 直下へ移した B8 では
 この差が出ないため、位置ではなく**モーダル境界の扱い**の差として観測している。
 
 残る 10 カテゴリは、記録したすべての停止で両 lane が一字一句一致した。
