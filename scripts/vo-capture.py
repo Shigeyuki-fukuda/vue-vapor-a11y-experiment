@@ -11,13 +11,10 @@ Issue #21 の記入シートは「アクセシビリティツリーは一致し�
 手測の記録が残っている B5 を再現して 8 停止すべて一致することで確認した
 （scenario="b5"）。ここが割れたらこのスクリプトは使わない。
 
-必要な事前設定（どちらも検証する人の環境を変えるため、記入シート側の手順は
-人がキーを押す形のまま残してある）:
-
-  1. VoiceOver ユーティリティ →「一般」→「AppleScript で VoiceOver を
-     制御することを許可」を ON
-  2. 実行するターミナルにアクセシビリティ権限（システム設定 → プライバシーと
-     セキュリティ → アクセシビリティ）
+必要な事前設定（検証専用の Safari プロファイル、AppleScript とアクセシビリティの
+許可、使い終わった後の戻し方）は docs/voiceover-procedure.md の
+「自動採取スクリプト（vo-capture.py）」にまとめてある。どれも検証する人の環境を
+変えるため、記入シート側の手順は人がキーを押す形のまま残してある。
 
 使い方（VoiceOver を ⌘F5 で起動し、Safari をウインドウ 1 枚だけ開いた状態で）:
 
@@ -26,16 +23,21 @@ Issue #21 の記入シートは「アクセシビリティツリーは一致し�
   python3 scripts/vo-capture.py b11 http://localhost:4174/ssr.html
 
 実行中はキーボードとマウスに触らない。Safari が前面から外れるとキーが
-別のアプリへ飛び、記録が壊れる。
+別のアプリへ飛び、記録が壊れる（キーを送る直前に毎回確かめ、外れていたら中断する）。
 
 **検証用の localhost 以外では実行しない。** `content of last phrase` は
 VoiceOver が直前に読み上げた内容を無条件に返すため、メール・パスワード
 マネージャ・社内ツールが前面にあると、その画面の内容が標準出力に出る。
 出力は会話ログや Issue のコメントへ貼られる前提なので、取り消しが利かない。
+そのため、AI エージェント内での実行・許可リスト外の URL・Safari 以外が前面に
+ある状態は、コードで止めている。
 """
+import os
+import re
 import subprocess
 import sys
 import time
+from urllib.parse import urlsplit
 
 POLL_INTERVAL = 0.12
 POLL_TIMEOUT = 6.0
@@ -48,6 +50,65 @@ VO_MODS = "{control down, option down}"
 
 # 起点。Tab ×1 がこれを読まなければ、フォーカスがページ内にない
 ORIGIN_PHRASE = "通知を表示"
+
+# classic と vapor のプレビューサーバ。127.0.0.1 は使い方にも手順書にも無いので
+# 許さない。URL は AppleScript の文字列へそのまま埋め込むので、解析前の文字列を
+# 引用符・制御文字・? # @ を含められない文字種に絞る（urlsplit は改行などを黙って
+# 捨てるため、解析後の値だけを見ると埋め込む値と食い違う）
+ALLOWED_ORIGINS = {("http", "localhost", 4173), ("http", "localhost", 4174)}
+SAFE_URL = re.compile(r"[A-Za-z0-9:/._-]*")
+VAPOR_PORT = 4174
+
+# 伏せ字は保険。Safari の自動入力候補が読み上げられたときに、決まった形の
+# 値（メールアドレス・カード番号）と候補一覧だけを拾う。名前・住所・電話番号は
+# 形が決まらないので拾えない。本命の対策は、自動入力を外した検証専用の
+# Safari プロファイルで実行すること
+SENSITIVE = re.compile(
+    r"[\w.+-]+@[\w-]+(\.[\w-]+)+"    # メールアドレス
+    r"|\d(?:[ -]?\d){12,18}"           # 13〜19 桁（空白・ハイフン区切りを含む）
+    r"|候補|自動入力"
+)
+REDACTED = "[REDACTED]"
+
+
+def is_allowed_url(url: str) -> bool:
+    if not SAFE_URL.fullmatch(url):
+        return False
+    try:
+        parts = urlsplit(url)
+        return (parts.scheme, parts.hostname, parts.port) in ALLOWED_ORIGINS
+    except ValueError:  # ポートが数値でない
+        return False
+
+
+def redact(phrase: str) -> str:
+    """機微な値を含む発話は、一部ではなく丸ごと伏せる（前後の文脈も候補の一部なため）。"""
+    return REDACTED if SENSITIVE.search(phrase) else phrase
+
+
+def refuse_inside_agent() -> None:
+    """Claude Code の Bash では標準出力がセッションログとして外部へ送られるため、止める。"""
+    if os.environ.get("CLAUDECODE"):
+        sys.exit(
+            "Claude Code の中では実行しない。採取した発話がセッションログとして"
+            "外部へ送られるため。自分のターミナルで実行する"
+        )
+
+
+def confirm() -> None:
+    print(
+        "このスクリプトは次のことをする:\n"
+        "  - Safari を前面に出し、キー入力（Tab・VO キー・⌘L・Return）を送る\n"
+        "  - VoiceOver が直前に読み上げた文字列を読み、標準出力に出す\n"
+        "Safari は自動入力を外した検証専用プロファイルで開いておくこと。"
+        "実行中はキーボードとマウスに触らない。"
+    )
+    try:
+        answer = input("続けるなら y: ")
+    except EOFError:  # 標準入力が端末でない
+        answer = ""
+    if answer.strip().lower() != "y":
+        sys.exit("中断した")
 
 
 def osa(script: str) -> str:
@@ -63,7 +124,17 @@ def last_phrase() -> str:
     return osa('tell application "VoiceOver" to return content of last phrase')
 
 
+def require_safari_frontmost() -> None:
+    front = osa(
+        'tell application "System Events" to return name of '
+        "first application process whose frontmost is true"
+    )
+    if front != "Safari":
+        sys.exit(f"最前面が Safari ではない（{front}）。キーを送らずに中断")
+
+
 def press(code: int, mods: str = "") -> None:
+    require_safari_frontmost()
     using = f" using {mods}" if mods else ""
     osa(f'tell application "System Events" to key code {code}{using}')
 
@@ -162,7 +233,7 @@ def run(tag: str, url: str, steps) -> None:
             press(KEY_TAB)
             previous = wait_for_new_phrase(previous)
             if ORIGIN_PHRASE not in previous:
-                sys.exit(f"起点がずれている（Tab ×1 の発話: {previous}）。記録せず中断")
+                sys.exit(f"起点がずれている（Tab ×1 の発話: {redact(previous)}）。記録せず中断")
             continue
         code, mods = action
         press(code, mods)
@@ -171,14 +242,21 @@ def run(tag: str, url: str, steps) -> None:
             previous = last_phrase()
             continue
         previous = wait_for_new_phrase(previous)
-        print(f"{label}: {previous}", flush=True)
+        print(f"{label}: {redact(previous)}", flush=True)
 
 
 def main() -> None:
+    refuse_inside_agent()
     if len(sys.argv) != 3 or sys.argv[1] not in SCENARIOS:
         sys.exit(f"使い方: {sys.argv[0]} {{{'|'.join(SCENARIOS)}}} <URL>")
     scenario, url = sys.argv[1], sys.argv[2]
-    lane = "vapor" if ":4174" in url else "classic"
+    if not is_allowed_url(url):
+        sys.exit(
+            f"許可していない URL: {url}\n"
+            "http://localhost:4173 か http://localhost:4174 の配下だけを開ける"
+        )
+    confirm()
+    lane = "vapor" if urlsplit(url).port == VAPOR_PORT else "classic"
     run(f"{scenario.upper()} {lane}", url, SCENARIOS[scenario]())
 
 
