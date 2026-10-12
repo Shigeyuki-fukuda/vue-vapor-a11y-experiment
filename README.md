@@ -351,7 +351,8 @@ Vapor の問題ではなく、Transition を使う限り両方で起きる。
 
 **それでも「Vapor Mode でアクセシビリティは壊れない」と言い切るには足りない。**
 [VoiceOver での実測](results/voiceover-log.md)は 11 カテゴリすべて終えており、
-lane 差は 1 件 (モーダルダイアログの境界で Vapor だけが領域名を読まない)。
+lane 差は 1 件 (モーダルダイアログの境界で、Vapor lane だけ VoiceOver が領域名を読まなかった。
+ariaSnapshot は両 lane で同一で、原因は特定していない)。
 ただし測ったのは **macOS 26.6.2 / Safari 26.6.2 / VoiceOver 日本語・詳細度「高」/
 vue 3.6.0-rc.3 という 1 構成だけ**で、NVDA・JAWS・TalkBack は測っていない。
 Vapor は変更が続いているため、rc が上がれば結果が変わりうる。
@@ -558,7 +559,7 @@ watch / shallowRef / traverse / onWatcherCleanup / createSelector
 パッチ機構が最初から入っているので、リスト描画を1つ増やしても増分が小さい。
 
 同じことが Teleport / Transition / `:is` でも起きた。これらを足した
-10カテゴリ時点で、**raw サイズは遂に vapor が classic を上回った**
+10カテゴリ時点で、**raw サイズは vapor が classic を上回った**
 (88.56 kB 対 86.12 kB)。Vapor はこの3機能それぞれに専用ランタイム
 (`VaporTeleport` / `VaporTransition` / `createDynamicComponent`) を引き込むのに対し、
 classic 側は既に積んでいる VDOM の汎用パッチ機構で賄えるためと考えられる。
@@ -574,8 +575,8 @@ classic +5.62 kB / gzip +2.22 kB に対し、**vapor +12.59 kB / gzip +4.27 kB**
 >
 > この実験では機能を1つ増やすたびに優位が縮み、10カテゴリで raw サイズが、
 > 11カテゴリ (SSR / hydration) で gzip も逆転した。
-> **「Vapor は小さい」は使う機能が限られている場合の話**で、
-> 一般化できる主張ではない。
+> この実験の範囲では、**「Vapor は小さい」は使う機能が限られている場合に限って
+> 成り立った**。ほかの構成でどうなるかは測っていない。
 
 ### コード生成方式が本当に切り替わっているか
 

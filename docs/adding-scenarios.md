@@ -108,7 +108,7 @@ async function open() {
 
 | カテゴリ | 検証したいこと | 状態 |
 |---|---|---|
-| live region | `role=status` の動的更新が支援技術に伝わるか | ✅ W1 完了 |
+| live region | `role=status` の動的更新が支援技術に伝わるか | ✅ 完了 |
 | フォーカス管理 | モーダル開閉時のフォーカス移動・復帰 | ✅ 完了 |
 | 動的 aria 属性 | `aria-expanded` の更新 | ✅ 完了 |
 | フォームエラー | `aria-invalid` / `aria-describedby` の紐付け | ✅ 完了 |
@@ -120,13 +120,14 @@ async function open() {
 | 動的コンポーネント | `:is` の差し替えで role が保たれ、古い関連付けが残らないか | ✅ 完了 |
 | SSR / hydration | サーバ描画した HTML を独立実装の hydration で引き継いでもツリーが保たれるか | ✅ 完了 |
 
-ariaSnapshot 差分はいずれも 0 件。VoiceOver での読み上げ検証は
-[../results/voiceover-log.md](../results/voiceover-log.md) が未記入のため残っている。
+ariaSnapshot 差分はいずれも 0 件。VoiceOver での読み上げも 11 カテゴリすべて
+[../results/voiceover-log.md](../results/voiceover-log.md) に記録した。
 
 ### 次に増やすなら
 
 README「検証範囲の限界」に挙げていた領域はすべて検証済みになった。
-残るのは **VoiceOver での読み上げ記録** で、こちらは実機が要る。
+残るのは **VoiceOver 以外のスクリーンリーダー**（NVDA・JAWS・TalkBack）での読み上げで、
+こちらも実機が要る。
 
 `aria-live="assertive"` と `polite` の読み上げ差など、既存カテゴリを
 細分化する方向であればこのフローに乗る。

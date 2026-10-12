@@ -567,8 +567,8 @@ synced -&gt; apps/vapor/src (14 files)
           バイト単位で同一かをその場でハッシュ照合する</strong>。</p>
           <pre><code>| lane | HTML の長さ | teleports の長さ | sha256 (先頭12) |
 |---|---|---|---|
-| classic | 2679 | 64 | 031a38b7e407 |
-| vapor | 2679 | 64 | 031a38b7e407 |
+| classic | 3309 | 64 | ed2f866445a0 |
+| vapor | 3309 | 64 | ed2f866445a0 |
 
 ✅ サーバ描画の HTML は全 lane で同一 (hydration 前の入力が揃っている)</code></pre>
           <p>ここが食い違ったら止める。hydration 前の入力が揃っていない状態で
@@ -592,7 +592,7 @@ synced -&gt; apps/vapor/src (14 files)
         <p class="why">
           <strong>この時点で vapor は raw でも gzip でも classic より大きい。</strong>
           6カテゴリ時点では gzip で 19% 小さかったので、優位は消えている。
-          「Vapor は小さい」を無条件の性質だと思っていると、ここで面食らう。
+          「Vapor は小さい」は、使う機能によっては成り立たない。
         </p>
         <div class="callout">
           <span class="label">この数字は機能セット依存</span>
